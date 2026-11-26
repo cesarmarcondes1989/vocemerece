@@ -28,8 +28,10 @@ export async function xpFor(kind: CometKind, receiverId: string, game: Game) {
 /** Mensagem aprovada: cometa no mapa + recálculo de energia/XP (e fim de jogo, se todos ficaram verdes). */
 export async function deliver(msg: { id: string; from_id: string; to_id: string }) {
   const supa = db();
-  await supa.from("comets").upsert({ id: msg.id, from_id: msg.from_id, to_id: msg.to_id });
-  await supa.rpc("recompute", { receiver: msg.to_id, giver: msg.from_id });
+  const { error: e1 } = await supa.from("comets").upsert({ id: msg.id, from_id: msg.from_id, to_id: msg.to_id });
+  if (e1) throw new Error(`cometa: ${e1.code} ${e1.message}`);
+  const { error: e2 } = await supa.rpc("recompute", { receiver: msg.to_id, giver: msg.from_id });
+  if (e2) throw new Error(`recompute: ${e2.code} ${e2.message}`);
 }
 
 export async function undeliver(msg: { id: string; from_id: string; to_id: string }) {

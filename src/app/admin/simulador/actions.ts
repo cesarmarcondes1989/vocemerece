@@ -60,7 +60,9 @@ export async function simTick(count: number) {
   const ids = (bots ?? []).map((b) => b.id);
   const ps = planets ?? [];
   const greens = ps.filter((p) => p.energy >= game.green_at).length;
-  const status = { phase: game.phase, greens, total: ps.length, bots: ids.length };
+  const status = { phase: game.phase, greens, total: ps.length, bots: ids.length, sent: 0, error: null as string | null };
+  // robôs sempre "a bordo" (o Recomeçar zera o lit_at)
+  await supa.from("planets").update({ lit_at: new Date().toISOString() }).in("id", ids).is("lit_at", null);
   if (!ids.length || game.phase === "lobby" || game.phase === "finale") return status;
 
   if (game.phase === "capsule") {
@@ -82,14 +84,22 @@ export async function simTick(count: number) {
     if (!to) continue;
     const r = Math.random();
     const kind = r < 0.5 ? "reaction" : r < 0.65 ? "sticker" : r < 0.9 ? "comment" : "text";
-    const { data: msg } = await supa.from("messages").insert({
+    const { data: msg, error } = await supa.from("messages").insert({
       from_id: from, to_id: to, kind, status: "approved", points: POINTS[kind], xp: POINTS[kind] * 2,
       sticker: kind === "reaction" ? pick(REACTIONS) : kind === "sticker" ? pick(STICKERS).id : null,
       item_ref: kind === "reaction" || kind === "comment" ? pick(REFS) : null,
       body: kind === "comment" || kind === "text" ? pick(COMMENTS) : null,
       moderation: { layer: "simulador" },
-    }).select("id, from_id, to_id").maybeSingle();     // reação repetida bate no índice único: só ignora
-    if (msg) await deliver(msg);
+    }).select("id, from_id, to_id").maybeSingle();
+    if (error && error.code !== "23505") {            // 23505 = reação repetida: normal, só ignora
+      status.error = `${error.code ?? ""} ${error.message}`;
+      console.error("[simulador] falha ao inserir:", error);
+      break;
+    }
+    if (msg) {
+      try { await deliver(msg); status.sent++; }
+      catch (e) { status.error = `deliver: ${(e as Error).message}`; console.error("[simulador] deliver:", e); break; }
+    }
   }
   return status;
 }

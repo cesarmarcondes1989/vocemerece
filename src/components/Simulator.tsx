@@ -13,6 +13,9 @@ export default function Simulator({ initialBots }: { initialBots: number }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [st, setSt] = useState<Status | null>(null);
   const [bots, setBots] = useState(initialBots);
+  const [sent, setSent] = useState(0);
+  const [lastTick, setLastTick] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
   const inFlight = useRef(false);
 
   useEffect(() => {
@@ -22,8 +25,11 @@ export default function Simulator({ initialBots }: { initialBots: number }) {
       inFlight.current = true;
       try {
         const s = await simTick(speed);
-        setSt(s); setBots(s.bots);
-        if (s.phase === "finale") setRunning(false);
+        setSt(s); setBots(s.bots); setSent((x) => x + s.sent); setErr(s.error);
+        setLastTick(new Date().toLocaleTimeString("pt-BR"));
+        if (s.phase === "finale" || s.error) setRunning(false);
+      } catch (e) {
+        setErr(e instanceof Error ? e.message : String(e)); setRunning(false);
       } finally { inFlight.current = false; }
     }, 2000);
     return () => clearInterval(t);
@@ -69,6 +75,9 @@ export default function Simulator({ initialBots }: { initialBots: number }) {
           </div>
         )}
         {running && !st && <p className="text-sm text-muted">Conectando…</p>}
+        {st?.phase === "lobby" && <p className="rounded-xl bg-accent/10 p-2 text-sm">O jogo está no <b>Lobby</b>: os robôs só jogam depois da 🚀 largada.</p>}
+        {(running || sent > 0) && <p className="text-xs text-muted">{running ? "🟢 rodando" : "⏸ pausado"} · {sent} interações enviadas{lastTick && ` · última rodada ${lastTick}`}</p>}
+        {err && <p className="rounded-xl bg-red-500/20 p-3 text-sm text-red-100">⚠️ {err}</p>}
       </section>
       {busy && <p className="animate-pulse text-sm">{busy}</p>}
       <p className="text-xs text-muted">Dica: depois do ensaio, use <b>🔁 Recomeçar o jogo</b> na Torre de controle e <b>Apagar robôs</b> aqui.</p>

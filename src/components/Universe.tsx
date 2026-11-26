@@ -42,7 +42,7 @@ export default function Universe({ me, initialPlanets, initialComets, initialGam
     const seen = new Set(initialComets.map((c) => c.id));
     async function tick() {
       try {
-        const r = await fetch("/api/universe");
+        const r = await fetch("/api/universe", { cache: "no-store" });
         if (!r.ok || !alive) return;
         const j = (await r.json()) as { game: Game; planets: Planet[]; comets: Comet[] };
         setGame((g) => ({ ...g, ...j.game }));

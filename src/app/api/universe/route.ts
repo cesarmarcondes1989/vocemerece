@@ -17,6 +17,6 @@ export async function GET() {
   ]);
   return Response.json(
     { game, planets, comets, at: new Date().toISOString() },
-    { headers: { "Cache-Control": "public, s-maxage=2, stale-while-revalidate=2" } },
+    { headers: { "Cache-Control": "public, max-age=0, s-maxage=2, stale-while-revalidate=2" } },
   );
 }

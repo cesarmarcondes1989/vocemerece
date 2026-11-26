@@ -104,7 +104,7 @@ async function wipeGame() {
   await supa.from("messages").delete().neq("id", ALL);
   await supa.from("capsules").delete().neq("person_id", ALL);
   await supa.from("board_capsule").delete().eq("id", 1);
-  await supa.from("planets").update({ energy: 0, received: 0, senders: 0, xp: 0, visited: 0, lit_at: null }).neq("id", ALL);
+  await supa.from("planets").update({ energy: 0, received: 0, senders: 0, xp: 0, visited: 0 }).neq("id", ALL);
   await supa.from("people").update({ finale: null }).neq("id", ALL);
   await supa.from("game").update({ phase: "lobby", started_at: null, all_green_at: null, finale_at: null, stats: null }).eq("id", 1);
 }
