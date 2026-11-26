@@ -67,14 +67,21 @@ export async function backToLobby() {
   await setGame({ phase: "lobby" });
 }
 
-export async function setGreenAt(formData: FormData) {
-  const v = Number(formData.get("green_at"));
-  const cap = Number(formData.get("sender_cap"));
-  if (v >= 1 && cap >= 1) await setGame({ green_at: v, sender_cap: cap });
-  // recalcula se alguém virou verde com a nova régua
+/** Ajusta a régua do verde e recalcula a energia de todos (em paralelo). Devolve o resultado para a tela. */
+export async function saveRules(greenAt: number, senderCap: number): Promise<{ ok: boolean; error?: string; greens?: number; total?: number }> {
+  if (!(await currentModerator())) return { ok: false, error: "Sessão de gestor expirou: entre de novo com o PIN." };
+  if (!(greenAt >= 1 && senderCap >= 1)) return { ok: false, error: "Use números maiores que zero" };
   const supa = db();
+  const { error } = await supa.from("game").update({ green_at: greenAt, sender_cap: senderCap }).eq("id", 1);
+  if (error) return { ok: false, error: error.message };
   const { data: ps } = await supa.from("planets").select("id");
-  for (const p of ps ?? []) await supa.rpc("recompute", { receiver: p.id, giver: p.id });
+  const ids = (ps ?? []).map((p) => p.id);
+  for (let i = 0; i < ids.length; i += 10) {
+    await Promise.all(ids.slice(i, i + 10).map((id) => supa.rpc("recompute", { receiver: id, giver: id })));
+  }
+  const { data: after } = await supa.from("planets").select("energy");
+  revalidatePath("/admin");
+  return { ok: true, greens: (after ?? []).filter((p) => p.energy >= greenAt).length, total: after?.length ?? 0 };
 }
 
 /** Grande revelação: calcula estatísticas, gera a cápsula da diretoria e libera os filmes. */

@@ -3,10 +3,11 @@ import { currentModerator } from "@/lib/session";
 import { db, signedUrl } from "@/lib/supabase";
 import { STICKERS } from "@/lib/types";
 import ModerationButtons from "@/components/ModerationButtons";
+import RulesForm from "@/components/RulesForm";
 import PendingButton from "@/components/PendingButton";
 import { energyColor, isGreen } from "@/lib/colors";
 import { getGame, SetupError } from "@/lib/game";
-import { backToLobby, lock, newGame, restartGame, decideItem, forceCapsule, revealFinale, setGreenAt, startGame, unlock } from "./actions";
+import { backToLobby, lock, newGame, restartGame, decideItem, forceCapsule, revealFinale, startGame, unlock } from "./actions";
 
 // a revelação chama a IA (estatísticas + cápsula da diretoria): pode levar ~1 min
 export const maxDuration = 300;
@@ -128,12 +129,8 @@ export default async function Admin() {
             </form>
           </div>
         </details>
-        <form action={setGreenAt} className="flex flex-wrap items-center gap-2 text-sm">
-          Verde com <input name="green_at" type="number" defaultValue={game.green_at} className="w-16 rounded bg-white/10 px-2 py-1" /> de energia,
-          máx. <input name="sender_cap" type="number" defaultValue={game.sender_cap} className="w-14 rounded bg-white/10 px-2 py-1" /> por pessoa
-          <button className="rounded-full bg-white/10 px-3 py-1">salvar</button>
-        </form>
-        <p className="text-xs text-muted">Energia: reação 1 · sticker 2 · comentário 3 · mensagem 4 · foto 5. Com 30 e teto 8, cada planeta precisa de pelo menos 4 pessoas diferentes (na prática, 8–12). Dá pra ajustar AO VIVO: jogo rápido demais? Aumenta. Travou? Diminui.</p>
+        <RulesForm greenAt={game.green_at} senderCap={game.sender_cap} />
+        <p className="text-xs text-muted">Energia: reação 1 · sticker 2 · comentário 3 · mensagem 4 · foto 5. Ex.: com 30 e teto 8, cada planeta precisa de pelo menos 4 pessoas diferentes (na prática, 8–12). Dá pra ajustar AO VIVO: jogo rápido demais? Aumenta. Travou? Diminui.</p>
       </section>
 
       {game.phase === "playing" && care.length > 0 && (
