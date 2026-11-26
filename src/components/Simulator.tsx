@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { restartGame } from "@/app/admin/actions";
 import { simClear, simCreate, simRound, type SimReport } from "@/app/admin/simulador/actions";
 
 export default function Simulator({ initialBots }: { initialBots: number }) {
@@ -72,6 +73,10 @@ export default function Simulator({ initialBots }: { initialBots: number }) {
             <button disabled={locked || bots === 0} className={`${btn} flex-1 bg-emerald-400 text-sm text-black`}
               onClick={() => run("Jogando até todos verdes… (até ~40s)", async () => { absorb(await simRound(150, true)); })}>🏁 Até o fim</button>
           </div>
+          <button disabled={locked} className="w-full rounded-full border border-white/20 px-4 py-2 text-sm disabled:opacity-40"
+            onClick={() => confirm("Recomeçar? Apaga mensagens, energia, cápsulas e filmes (mantém pessoas e robôs).") && run("Recomeçando o jogo…", async () => { await restartGame(); setReport(null); setFeed([]); setNote("✓ Jogo recomeçado: voltou para o lobby. Agora é só ▶."); })}>
+            🔁 Recomeçar o jogo (zera tudo, mantém pessoas)
+          </button>
           <p className="text-xs text-muted">No lobby, a largada é automática.</p>
         </section>
 

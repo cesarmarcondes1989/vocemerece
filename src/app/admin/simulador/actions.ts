@@ -61,7 +61,8 @@ export async function simRound(count: number, untilGreen = false): Promise<SimRe
   const fail = (message: string): SimReport => ({ ok: false, message, greens: 0, total: 0, phase: "?", feed: [] });
   try {
     let game = await getGame();
-    if (game.phase === "finale") return fail("O jogo está no Final. Use 🔁 Recomeçar o jogo na Torre de controle.");
+    if (game.phase === "finale" || game.phase === "capsule")
+      return fail(`O jogo já foi encerrado (fase ${game.phase === "finale" ? "Final" : "Cápsulas"}). Clique em 🔁 Recomeçar o jogo para simular de novo.`);
     if (game.phase === "lobby") {
       await supa.from("game").update({ phase: "playing", started_at: new Date().toISOString() }).eq("id", 1);
       game = await getGame();
