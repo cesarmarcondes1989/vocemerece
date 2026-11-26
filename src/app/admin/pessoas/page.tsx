@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import CopyButton from "@/components/CopyButton";
+import PeopleList from "@/components/PeopleList";
 import { baseUrl, tokenFor } from "@/lib/people";
 import { currentModerator } from "@/lib/session";
 import { db, signedUrl } from "@/lib/supabase";
@@ -37,20 +37,7 @@ export default async function Pessoas() {
         {!process.env.PUBLIC_BASE_URL && <> Os links estão usando o domínio atual ({base}); defina <code>PUBLIC_BASE_URL</code> na Vercel antes de gravar as tags.</>}
       </p>
       {people.length === 0 && <p className="rounded-2xl bg-white/5 p-6 text-center">Ninguém cadastrado ainda. Bora começar! 🚀</p>}
-      <ul className="space-y-2">
-        {people.map((p) => (
-          <li key={p.id} className="flex items-center gap-3 rounded-2xl bg-white/5 p-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            {p.photo ? <img src={p.photo} alt="" className="h-12 w-12 rounded-full object-cover" /> : <div className="grid h-12 w-12 place-items-center rounded-full bg-white/10">🪐</div>}
-            <div className="min-w-0 flex-1">
-              <p className="font-semibold">{p.nickname} <span className="text-sm font-normal text-muted">{p.name}{p.is_moderator && " · 🛡️ gestor(a)"}</span></p>
-              <p className="text-xs text-muted">Perfil {p.filled}/7 preenchido</p>
-            </div>
-            {p.link && <CopyButton text={p.link} label="🔗 link" />}
-            <Link href={`/admin/pessoas/${p.slug}`} className="rounded-full bg-white/10 px-3 py-1 text-sm">editar</Link>
-          </li>
-        ))}
-      </ul>
+      <PeopleList people={people.map((p) => ({ id: p.id, slug: p.slug, name: p.name, nickname: p.nickname, is_moderator: p.is_moderator, link: p.link, filled: p.filled, photo: p.photo }))} />
     </main>
   );
 }
