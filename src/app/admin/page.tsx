@@ -2,6 +2,7 @@ import Link from "next/link";
 import { currentModerator } from "@/lib/session";
 import { db, signedUrl } from "@/lib/supabase";
 import { STICKERS } from "@/lib/types";
+import PendingButton from "@/components/PendingButton";
 import { energyColor, isGreen } from "@/lib/colors";
 import { getGame, SetupError } from "@/lib/game";
 import { backToLobby, decide, lock, decideItem, forceCapsule, revealFinale, setGreenAt, startGame, unlock } from "./actions";
@@ -99,7 +100,13 @@ export default async function Admin() {
         <div className="flex flex-wrap gap-2">
           {game.phase === "lobby" && <form action={startGame}><button className={`${btn} bg-emerald-400 text-black`}>🚀 Dar a largada</button></form>}
           {game.phase === "playing" && <form action={forceCapsule}><button className={`${btn} bg-white/15`}>⏭️ Encerrar e ir pras cápsulas</button></form>}
-          {(game.phase === "capsule" || game.phase === "playing") && <form action={revealFinale}><button className={`${btn} bg-accent text-black`}>🎬 Grande revelação (gera filmes + cápsula da diretoria)</button></form>}
+          {(game.phase === "capsule" || game.phase === "playing") && (
+            <form action={revealFinale}>
+              <PendingButton className={`${btn} bg-accent text-black`} pending="⏳ Gerando filmes e cápsula com IA… (~1 min, não feche)"
+                confirm="Revelar agora? O jogo acaba e todo mundo recebe o filme.">🎬 Grande revelação</PendingButton>
+            </form>
+          )}
+          <Link href="/admin/previa/time" className={`${btn} border border-accent/50`}>👀 Prévia do filme do time</Link>
           {game.phase === "finale" && <Link href="/final/time" className={`${btn} bg-accent text-black`}>🎬 Filme do time (telão)</Link>}
           {game.phase !== "lobby" && <form action={backToLobby}><button className={`${btn} border border-white/20`}>↩︎ voltar ao lobby</button></form>}
           <Link href="/admin/capsula" className={`${btn} border border-white/20`}>🏢 Cápsula da diretoria</Link>
@@ -164,10 +171,14 @@ export default async function Admin() {
       </section>
 
       <section>
-        <h2 className="mb-3 text-lg font-bold">Prévia das histórias</h2>
+        <h2 className="mb-1 text-lg font-bold">Prévias por pessoa</h2>
+        <p className="mb-3 text-sm text-muted">Toque no nome para ver o planeta; 🎬 para ver o filme pessoal com os dados de agora.</p>
         <div className="flex flex-wrap gap-2">
           {(people ?? []).map((p) => (
-            <Link key={p.slug} href={`/admin/preview/${p.slug}`} className="rounded-full bg-white/10 px-3 py-1 text-sm">{p.nickname}</Link>
+            <span key={p.slug} className="flex overflow-hidden rounded-full bg-white/10 text-sm">
+              <Link href={`/admin/preview/${p.slug}`} className="px-3 py-1">{p.nickname}</Link>
+              <Link href={`/admin/previa/${p.slug}`} className="border-l border-white/10 px-2 py-1" title="filme pessoal">🎬</Link>
+            </span>
           ))}
         </div>
       </section>
