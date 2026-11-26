@@ -27,7 +27,7 @@ export default async function Admin() {
         <h1 className="mb-1 text-2xl font-bold">🛡️ Torre de controle</h1>
         <p className="mb-4 text-sm text-muted">Área dos gestores. Use o <code>ADMIN_PIN</code> configurado na Vercel.</p>
         <form action={unlock} className="flex gap-2">
-          <input name="pin" type="password" inputMode="numeric" placeholder="PIN dos gestores" autoFocus className="flex-1 rounded-full bg-white/10 px-4 py-2" />
+          <input name="pin" type="password" placeholder="PIN dos gestores" autoFocus autoComplete="current-password" autoCapitalize="none" autoCorrect="off" className="flex-1 rounded-full bg-white/10 px-4 py-2" />
           <button className="rounded-full bg-accent px-4 py-2 font-semibold text-black">Entrar</button>
         </form>
       </main>
