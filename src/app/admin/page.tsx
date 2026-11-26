@@ -2,10 +2,11 @@ import Link from "next/link";
 import { currentModerator } from "@/lib/session";
 import { db, signedUrl } from "@/lib/supabase";
 import { STICKERS } from "@/lib/types";
+import ModerationButtons from "@/components/ModerationButtons";
 import PendingButton from "@/components/PendingButton";
 import { energyColor, isGreen } from "@/lib/colors";
 import { getGame, SetupError } from "@/lib/game";
-import { backToLobby, decide, lock, newGame, restartGame, decideItem, forceCapsule, revealFinale, setGreenAt, startGame, unlock } from "./actions";
+import { backToLobby, lock, newGame, restartGame, decideItem, forceCapsule, revealFinale, setGreenAt, startGame, unlock } from "./actions";
 
 // a revelação chama a IA (estatísticas + cápsula da diretoria): pode levar ~1 min
 export const maxDuration = 300;
@@ -72,11 +73,7 @@ export default async function Admin() {
         {url && m.kind === "audio" && <audio controls src={url} className="mt-2 w-full" />}
         {m.body && <p className="mt-2 whitespace-pre-wrap">{m.body}</p>}
         {actions && (
-          <form action={decide} className="mt-3 flex gap-2">
-            <input type="hidden" name="id" value={m.id} />
-            <button name="decision" value="approve" className="flex-1 rounded-full bg-emerald-500 py-2 font-semibold text-black">Aprovar</button>
-            <button name="decision" value="reject" className="flex-1 rounded-full bg-red-500/80 py-2 font-semibold">Barrar</button>
-          </form>
+          <ModerationButtons id={m.id} alreadyRejected={m.status === "rejected"} />
         )}
       </li>
     );

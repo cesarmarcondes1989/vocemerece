@@ -21,24 +21,30 @@ export async function lock() {
   revalidatePath("/admin");
 }
 
-export async function decide(formData: FormData) {
-  if (!(await currentModerator())) throw new Error("sem permissão");
-  const me = await currentPerson();
-  const id = String(formData.get("id"));
-  const approve = formData.get("decision") === "approve";
-  const supa = db();
-  const { data: msg } = await supa
-    .from("messages")
-    .update({ status: approve ? "approved" : "rejected", decided_by: me?.id ?? null, decided_at: new Date().toISOString(), hidden: false })
-    .eq("id", id)
-    .select("id, from_id, to_id, media_path")
-    .single();
-  if (msg && approve) await deliver(msg);
-  if (msg && !approve) {
-    await undeliver(msg);
-    if (msg.media_path) await supa.storage.from("uploads").remove([msg.media_path]);
+/** Aprovar/barrar uma mensagem. Devolve o resultado para o botão mostrar na hora. */
+export async function decideMessage(id: string, approve: boolean): Promise<{ ok: boolean; error?: string }> {
+  if (!(await currentModerator())) return { ok: false, error: "Sessão de gestor expirou: entre de novo com o PIN." };
+  try {
+    const me = await currentPerson();
+    const supa = db();
+    const { data: msg, error } = await supa
+      .from("messages")
+      .update({ status: approve ? "approved" : "rejected", decided_by: me?.id ?? null, decided_at: new Date().toISOString(), hidden: false })
+      .eq("id", id)
+      .select("id, from_id, to_id, media_path")
+      .single();
+    if (error || !msg) return { ok: false, error: error?.message ?? "mensagem não encontrada" };
+    if (approve) await deliver(msg);
+    else {
+      await undeliver(msg);
+      if (msg.media_path) await supa.storage.from("uploads").remove([msg.media_path]);
+    }
+    revalidatePath("/admin");
+    return { ok: true };
+  } catch (e) {
+    console.error("[decideMessage]", e);
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
   }
-  revalidatePath("/admin");
 }
 
 // ---------------- Controle do jogo ----------------
