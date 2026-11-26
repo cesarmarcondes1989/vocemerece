@@ -1,0 +1,15 @@
+{
+  "_revisado_por": "exemplo",
+  "headline": "2026 foi o ano em que você virou foguete 🚀",
+  "moments": [
+    { "title": "O lançamento do app", "text": "Três semanas de sprint, zero pânico e um deploy numa sexta (que deu certo!).", "photo": "ana-lancamento.jpg" },
+    { "title": "A mentora do time", "text": "Duas pessoas novas que hoje voam sozinhas. Isso é seu também." }
+  ],
+  "numbers": [
+    { "value": "47", "label": "PRs revisados com carinho" },
+    { "value": "∞", "label": "cafés com o cliente X" }
+  ],
+  "words": ["Calma", "Afiada", "Generosa"],
+  "quotes": [{ "text": "Ela transforma reunião difícil em plano claro em 10 minutos.", "from": "Bruno" }],
+  "thanks": "Obrigado por segurar o leme quando o mar ficou bravo. Você deixa o time melhor."
+}
