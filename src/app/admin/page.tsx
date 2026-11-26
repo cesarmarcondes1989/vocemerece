@@ -89,6 +89,7 @@ export default async function Admin() {
         <div className="flex gap-3 text-sm">
           <Link href="/admin/pessoas" className="rounded-full bg-accent px-4 py-2 font-bold text-black">👥 Pessoas</Link>
           <Link href="/admin/simulador" className="rounded-full bg-white/10 px-4 py-2 font-bold">🤖 Simulador</Link>
+          <Link href="/telao" className="rounded-full bg-white/10 px-4 py-2 font-bold">📺 Telão</Link>
           <Link href="/universo" className="py-2 underline">universo</Link>
           <form action={lock}><button className="py-2 text-muted underline">sair</button></form>
         </div>

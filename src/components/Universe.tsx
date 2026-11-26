@@ -25,7 +25,8 @@ function pickMissions(planets: Planet[], comets: Comet[], me: string, greenAt: n
   return [...new Map(picks.map((p) => [p.id, p])).values()].slice(0, 3);
 }
 
-export default function Universe({ me, initialPlanets, initialComets, initialGame }: { me: Me; initialPlanets: Planet[]; initialComets: Comet[]; initialGame: Game }) {
+/** `spectator`: modo telão (sem jogador, sem cliques, sem missões). Usado em /telao e no simulador. */
+export default function Universe({ me, initialPlanets, initialComets, initialGame, spectator = false }: { me: Me; initialPlanets: Planet[]; initialComets: Comet[]; initialGame: Game; spectator?: boolean }) {
   const router = useRouter();
   const [planets, setPlanets] = useState(initialPlanets);
   const [comets, setComets] = useState(initialComets);
@@ -81,6 +82,9 @@ export default function Universe({ me, initialPlanets, initialComets, initialGam
   return (
     <main className="fixed inset-0 flex flex-col">
       <header className="z-10 space-y-2 p-4 pt-[max(env(safe-area-inset-top),16px)]">
+        {spectator ? (
+          <p className="text-center text-sm uppercase tracking-[0.3em] text-accent">Universo 2026 · ao vivo</p>
+        ) : (
         <div className="flex items-center justify-between gap-2">
           <Link href="/eu" className="flex items-center gap-2">
             <span className="grid h-10 w-10 place-items-center rounded-full text-lg font-black text-black" style={{ background: energyColor(mine?.energy ?? 0, game.green_at) }}>{lvl.n}</span>
@@ -91,6 +95,7 @@ export default function Universe({ me, initialPlanets, initialComets, initialGam
             <button onClick={() => setInboxOpen(true)} className="whitespace-nowrap rounded-full bg-white/10 px-4 py-2 text-sm font-semibold">Recebidos</button>
           </div>
         </div>
+        )}
         {game.phase === "lobby" ? (
           <p className="rounded-2xl bg-white/5 p-3 text-center">🛸 <b className="text-accent">{aboard}</b> de {planets.length} a bordo. A largada é já já!</p>
         ) : (
@@ -128,7 +133,7 @@ export default function Universe({ me, initialPlanets, initialComets, initialGam
             const { x, y } = pos(p);
             const fill = energyColor(p.energy, game.green_at);
             return (
-              <g key={p.id} onClick={() => go(p)} className="cursor-pointer">
+              <g key={p.id} onClick={() => !spectator && go(p)} className={spectator ? "" : "cursor-pointer"}>
                 <circle cx={x} cy={y} r={r * (green ? 2.8 : 2)} fill="url(#glow)" opacity={green ? 0.8 : 0.35} />
                 <motion.circle cx={x} cy={y} r={r} fill={fill} stroke={isMe ? "#ffcf5a" : "transparent"} strokeWidth={5}
                   animate={{ scale: green ? [1, 1.12, 1] : [1, 1.04, 1] }} transition={{ repeat: Infinity, duration: green ? 1.6 : 3 + p.x * 3 }}
@@ -143,7 +148,7 @@ export default function Universe({ me, initialPlanets, initialComets, initialGam
         </svg>
       </div>
 
-      {game.phase === "playing" && missions.length > 0 && (
+      {!spectator && game.phase === "playing" && missions.length > 0 && (
         <div className="z-10 px-4 pb-[max(env(safe-area-inset-bottom),12px)]">
           <div className="mb-1 flex items-center justify-between text-xs text-muted">
             <span>🎯 Missões: visite e ganhe XP em dobro em quem ainda não tá verde</span>
@@ -161,7 +166,7 @@ export default function Universe({ me, initialPlanets, initialComets, initialGam
 
       <AnimatePresence>
         {inboxOpen && <Inbox key="i" onClose={() => setInboxOpen(false)} />}
-        {game.phase === "capsule" && (
+        {!spectator && game.phase === "capsule" && (
           <motion.div key="cap" className="fixed inset-0 z-40 overflow-y-auto bg-space/95 p-5" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <div className="mx-auto max-w-md space-y-4 py-8 text-center">
               <motion.div initial={{ scale: 0 }} animate={{ scale: 1, rotate: [0, 10, -10, 0] }} transition={{ type: "spring" }} className="text-7xl">💚</motion.div>
@@ -173,7 +178,7 @@ export default function Universe({ me, initialPlanets, initialComets, initialGam
             </div>
           </motion.div>
         )}
-        {game.phase === "finale" && !hideFinale && (
+        {!spectator && game.phase === "finale" && !hideFinale && (
           <motion.div key="fin" className="fixed inset-0 z-40 grid place-items-center bg-space/95 p-6 text-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <div className="space-y-5">
               <div className="text-7xl">🎬</div>

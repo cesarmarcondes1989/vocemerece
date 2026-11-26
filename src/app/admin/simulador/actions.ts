@@ -48,7 +48,7 @@ export async function simCreate(n: number) {
   }
 }
 
-export type SimReport = { ok: boolean; message: string; greens: number; total: number; phase: string };
+export type SimReport = { ok: boolean; message: string; greens: number; total: number; phase: string; feed: string[] };
 
 /**
  * Uma rodada de simulação, numa chamada só: robôs mandam `count` interações (gravadas em lote),
@@ -58,7 +58,7 @@ export type SimReport = { ok: boolean; message: string; greens: number; total: n
 export async function simRound(count: number, untilGreen = false): Promise<SimReport> {
   await guard();
   const supa = db();
-  const fail = (message: string): SimReport => ({ ok: false, message, greens: 0, total: 0, phase: "?" });
+  const fail = (message: string): SimReport => ({ ok: false, message, greens: 0, total: 0, phase: "?", feed: [] });
   try {
     let game = await getGame();
     if (game.phase === "finale") return fail("O jogo está no Final. Use 🔁 Recomeçar o jogo na Torre de controle.");
@@ -73,6 +73,7 @@ export async function simRound(count: number, untilGreen = false): Promise<SimRe
     await supa.from("planets").update({ lit_at: new Date().toISOString() }).in("id", ids).is("lit_at", null);
 
     let sent = 0;
+    let feed: string[] = [];
     for (let round = 0; round < (untilGreen ? 40 : 1); round++) {
       const { data: planets, error: ep } = await supa.from("planets").select("id, energy");
       if (ep) return fail(`Ler planetas: ${ep.message}`);
@@ -81,7 +82,8 @@ export async function simRound(count: number, untilGreen = false): Promise<SimRe
       if (game.phase !== "playing" || needy.length === 0) break;
 
       const seen = new Set<string>();
-      const rows = [];
+      type Row = { from_id: string; to_id: string; kind: string; status: string; points: number; xp: number; sticker: string | null; item_ref: string | null; body: string | null; moderation: object };
+      const rows: Row[] = [];
       for (let k = 0; k < count; k++) {
         const from = pick(ids);
         const pool = Math.random() < 0.6 ? needy.slice(0, 15) : ps;
@@ -108,6 +110,13 @@ export async function simRound(count: number, untilGreen = false): Promise<SimRe
       if (error) return fail(`Gravar mensagens: ${error.code} ${error.message}`);
       const msgs = inserted ?? [];
       sent += msgs.length;
+      const { data: names } = await supa.from("planets").select("id, nickname");
+      const nick = new Map((names ?? []).map((n) => [n.id, n.nickname]));
+      feed = msgs.slice(-12).reverse().map((m) => {
+        const r = rows.find((x) => x.from_id === m.from_id && x.to_id === m.to_id);
+        const what = !r ? "☄️" : r.kind === "reaction" ? `reagiu ${r.sticker}` : r.kind === "sticker" ? `deu o título ${STICKERS.find((x) => x.id === r.sticker)?.emoji ?? "✨"}` : `“${r.body}”`;
+        return `${nick.get(m.from_id) ?? "?"} → ${nick.get(m.to_id) ?? "?"}: ${what}`;
+      });
       if (msgs.length) {
         const { error: ec } = await supa.from("comets").insert(msgs);
         if (ec) return fail(`Gravar cometas: ${ec.code} ${ec.message}`);
@@ -136,7 +145,7 @@ export async function simRound(count: number, untilGreen = false): Promise<SimRe
     const msg = game.phase === "capsule"
       ? `🎉 ${sent} interações. TODOS VERDES! Robôs escreveram as cápsulas. Agora: 🎬 Grande revelação na Torre.`
       : `✓ ${sent} interações enviadas. ${greens}/${total} planetas verdes.${greens < total ? "" : ""}`;
-    return { ok: true, message: msg, greens, total, phase: game.phase };
+    return { ok: true, message: msg, greens, total, phase: game.phase, feed };
   } catch (e) {
     console.error("[simulador]", e);
     return fail(e instanceof Error ? e.message : String(e));
