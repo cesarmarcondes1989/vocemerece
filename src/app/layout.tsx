@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
+import GameWatcher from "@/components/GameWatcher";
 
 const geist = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 
@@ -21,6 +22,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full">
         <div className="stars" aria-hidden />
         <div className="relative z-10 min-h-full">{children}</div>
+        <GameWatcher />
       </body>
     </html>
   );
