@@ -98,8 +98,8 @@ export default async function Admin() {
           <span className="text-sm">{greens}/{planets?.length ?? 0} verdes · {capsules ?? 0} cápsulas</span>
         </div>
         <div className="flex flex-wrap gap-2">
-          {game.phase === "lobby" && <form action={startGame}><button className={`${btn} bg-emerald-400 text-black`}>🚀 Dar a largada</button></form>}
-          {game.phase === "playing" && <form action={forceCapsule}><button className={`${btn} bg-white/15`}>⏭️ Encerrar e ir pras cápsulas</button></form>}
+          {game.phase === "lobby" && <form action={startGame}><PendingButton className={`${btn} bg-emerald-400 text-black`} pending="⏳ Dando a largada…">🚀 Dar a largada</PendingButton></form>}
+          {game.phase === "playing" && <form action={forceCapsule}><PendingButton className={`${btn} bg-white/15`} pending="⏳ Encerrando…" confirm="Encerrar o jogo agora e ir para as cápsulas?">⏭️ Encerrar e ir pras cápsulas</PendingButton></form>}
           {(game.phase === "capsule" || game.phase === "playing") && (
             <form action={revealFinale}>
               <PendingButton className={`${btn} bg-accent text-black`} pending="⏳ Gerando filmes e cápsula com IA… (~1 min, não feche)"
@@ -108,7 +108,7 @@ export default async function Admin() {
           )}
           <Link href="/admin/previa/time" className={`${btn} border border-accent/50`}>👀 Prévia do filme do time</Link>
           {game.phase === "finale" && <Link href="/final/time" className={`${btn} bg-accent text-black`}>🎬 Filme do time (telão)</Link>}
-          {game.phase !== "lobby" && <form action={backToLobby}><button className={`${btn} border border-white/20`}>↩︎ voltar ao lobby</button></form>}
+          {game.phase !== "lobby" && <form action={backToLobby}><PendingButton className={`${btn} border border-white/20`} pending="⏳ Voltando…">↩︎ voltar ao lobby</PendingButton></form>}
           <Link href="/admin/capsula" className={`${btn} border border-white/20`}>🏢 Cápsula da diretoria</Link>
         </div>
         <details className="rounded-2xl bg-black/20 p-3 text-sm">
@@ -169,8 +169,8 @@ export default async function Admin() {
                 <p className="mt-1">{it.emoji} {it.text}</p>
                 <form action={decideItem} className="mt-3 flex gap-2">
                   <input type="hidden" name="id" value={it.id} />
-                  <button name="decision" value="approve" className="flex-1 rounded-full bg-emerald-500 py-2 font-semibold text-black">Aprovar</button>
-                  <button name="decision" value="reject" className="flex-1 rounded-full bg-red-500/80 py-2 font-semibold">Barrar</button>
+                  <PendingButton name="decision" value="approve" className="flex-1 rounded-full bg-emerald-500 py-2 font-semibold text-black" pending="Aprovando…">Aprovar</PendingButton>
+                  <PendingButton name="decision" value="reject" className="flex-1 rounded-full bg-red-500/80 py-2 font-semibold" pending="Barrando…">Barrar</PendingButton>
                 </form>
               </li>
             ))}
