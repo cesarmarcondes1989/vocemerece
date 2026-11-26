@@ -38,13 +38,37 @@ export default function TeamMotion({ stats, planets, comets }: { stats: GameStat
       <motion.p {...fadeUp(0.6)} className="text-2xl"><b className="text-accent">{stats.people} planetas</b> ficaram verdes.</motion.p>
       <motion.p {...fadeUp(1.4)} className="text-muted">Ninguém ficou pra trás. 💚</motion.p>
     </> });
-    s.push({ key: "nums", duration: 7000, content: <div className="grid grid-cols-2 gap-6">
-      {([["reaction", "reações"], ["comment", "comentários"], ["text", "mensagens"], ["sticker", "títulos"], ["photo", "fotos juntos"]] as const)
-        .filter(([k]) => stats.totals[k] > 0)
-        .map(([k, l], i) => (
-          <motion.div key={k} {...fadeUp(i * 0.35)}><div className="text-5xl font-black text-accent">{stats.totals[k].toLocaleString("pt-BR")}</div><div>{l}</div></motion.div>
+    const x = stats.extra;
+    const tiles: { n: string; l: string; big?: boolean }[] = [
+      { n: stats.totals.all.toLocaleString("pt-BR"), l: "interações no total", big: true },
+      { n: stats.totals.reaction.toLocaleString("pt-BR"), l: "reações" },
+      { n: (stats.totals.comment + stats.totals.text).toLocaleString("pt-BR"), l: "comentários e mensagens" },
+      { n: stats.totals.sticker.toLocaleString("pt-BR"), l: "títulos dados" },
+      ...(stats.totals.photo ? [{ n: String(stats.totals.photo), l: "fotos juntos" }] : []),
+      ...(x ? [
+        { n: x.words.toLocaleString("pt-BR"), l: "palavras de carinho escritas" },
+        { n: x.perPerson.toLocaleString("pt-BR"), l: "interações por pessoa" },
+        { n: String(x.peakPerMinute), l: "cometas no minuto mais agitado" },
+        ...(x.topReaction ? [{ n: x.topReaction.emoji, l: `reação favorita (${x.topReaction.count}×)` }] : []),
+        ...(x.topSticker ? [{ n: x.topSticker.emoji, l: `título mais dado: ${x.topSticker.label} (${x.topSticker.count}×)` }] : []),
+        { n: `${x.lit}/${stats.people}`, l: "planetas acesos" },
+        { n: `${stats.minutes} min`, l: "pra todo mundo ficar verde" },
+        { n: `${stats.connectedPct}%`, l: "das duplas possíveis se conectaram" },
+      ] : []),
+    ];
+    s.push({ key: "nums", full: true, duration: 9000, content: <>
+      <motion.p {...fadeUp()} className="text-sm uppercase tracking-[0.25em] text-muted">O jogo em números</motion.p>
+      <div className="grid w-full grid-cols-2 gap-3 md:grid-cols-4">
+        {tiles.map((t, i) => (
+          <motion.div key={t.l} initial={{ opacity: 0, scale: 0.6, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ delay: 0.2 + i * 0.15, type: "spring", damping: 13 }}
+            className={`rounded-3xl border border-white/10 bg-white/[0.05] p-4 ${t.big ? "col-span-2 md:row-span-2 flex flex-col justify-center" : ""}`}>
+            <div className={`font-black text-accent ${t.big ? "text-7xl md:text-8xl" : "text-4xl md:text-5xl"}`}>{t.n}</div>
+            <div className="mt-1 text-sm text-ink/80">{t.l}</div>
+          </motion.div>
         ))}
-    </div> });
+      </div>
+    </> });
     s.push({ key: "web", duration: 8000, content: <>
       <motion.p {...fadeUp()} className="text-xl"><b className="text-accent">{stats.pairs}</b> conexões entre pessoas</motion.p>
       <Constellation planets={planets} comets={comets} />

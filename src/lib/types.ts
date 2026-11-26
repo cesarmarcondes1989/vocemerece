@@ -56,6 +56,14 @@ export type GameStats = {
   highlights: string[];       // trechos anônimos escolhidos pela IA
   themes: string[];           // palavras/temas que mais apareceram
   headline: string;
+  extra?: {                   // números extras do painel (opcional: filmes gerados antes não têm)
+    words: number;            // palavras escritas em comentários/mensagens
+    perPerson: number;        // interações por pessoa (média)
+    peakPerMinute: number;    // pico de interações num único minuto
+    topReaction: { emoji: string; count: number } | null;
+    topSticker: { emoji: string; label: string; count: number } | null;
+    lit: number;              // quantos entraram no jogo
+  };
 };
 
 export type ProfileItem = { id: string; text: string; emoji: string; status?: string };

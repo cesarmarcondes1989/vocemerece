@@ -70,8 +70,23 @@ export async function computeStats(opts: { ai?: boolean } = {}): Promise<GameSta
   const fallback = { headline: "Um time que se encontrou.", highlights: shuffled.slice(0, 14).map((t) => t.slice(0, 110)), themes: [] as string[] };
   const ai = !useAi ? fallback : await teamAI(shuffled).catch((e) => { console.error("[finale] IA do time falhou:", e); return { headline: "Um time que se encontrou.", highlights: [], themes: [] }; });
 
+  const count = <K extends string>(keys: K[]) => { const m = new Map<K, number>(); keys.forEach((k) => m.set(k, (m.get(k) ?? 0) + 1)); return [...m].sort((a, b) => b[1] - a[1])[0] ?? null; };
+  const tr = count(msgs.filter((m) => m.kind === "reaction" && m.sticker).map((m) => m.sticker!));
+  const ts = count(msgs.filter((m) => m.kind === "sticker" && m.sticker).map((m) => m.sticker!));
+  const { STICKERS } = await import("./types");
+  const stk = ts ? STICKERS.find((x) => x.id === ts[0]) : null;
+  const perMinute = count(msgs.map((m) => m.created_at.slice(0, 16)));
+  const extra = {
+    words: texts.reduce((a, t) => a + t.split(/\s+/).filter(Boolean).length, 0),
+    perPerson: n ? Math.round((msgs.length / n) * 10) / 10 : 0,
+    peakPerMinute: perMinute?.[1] ?? 0,
+    topReaction: tr ? { emoji: tr[0], count: tr[1] } : null,
+    topSticker: ts ? { emoji: stk?.emoji ?? "✨", label: stk?.label ?? ts[0], count: ts[1] } : null,
+    lit: ps.filter((p) => p.lit_at).length,
+  };
+
   return {
-    people: n, totals, pairs,
+    people: n, totals, pairs, extra,
     connectedPct: n > 1 ? Math.round((pairs / ((n * (n - 1)) / 2)) * 100) : 0,
     minutes,
     explorer: explorer ? { id: explorer.id, nickname: explorer.nickname, visited: explorer.visited } : null,
