@@ -37,7 +37,7 @@ async function teamAI(texts: string[]) {
     system: `Você monta o "filme do time": um motion de fim de ano mostrado num telão para ~60 colegas.
 Recebe elogios e comentários que as pessoas trocaram num jogo.
 - headline: uma frase curta (até 70 caracteres), calorosa e com energia, que resuma o espírito do que foi trocado.
-- highlights: 6 a 8 trechos marcantes, DIVERSOS (não todos sobre o mesmo assunto), até 110 caracteres cada.
+- highlights: 12 a 16 trechos marcantes, DIVERSOS (não todos sobre o mesmo assunto), até 110 caracteres cada.
   São ANÔNIMOS: remova nomes, apelidos e qualquer detalhe que identifique quem mandou ou quem recebeu. Edite de leve para caber.
   Evite piadas internas que só fazem sentido para duas pessoas.
 - themes: 6 a 8 palavras ou expressões curtas que mais aparecem no espírito das mensagens (ex.: "parceria", "paciência").
@@ -67,7 +67,7 @@ export async function computeStats(opts: { ai?: boolean } = {}): Promise<GameSta
 
   const texts = msgs.filter((m) => (m.kind === "text" || m.kind === "comment") && m.body).map((m) => m.body!);
   const shuffled = texts.sort(() => Math.random() - 0.5).slice(0, 2500);
-  const fallback = { headline: "Um time que se encontrou.", highlights: shuffled.slice(0, 4).map((t) => t.slice(0, 110)), themes: [] as string[] };
+  const fallback = { headline: "Um time que se encontrou.", highlights: shuffled.slice(0, 14).map((t) => t.slice(0, 110)), themes: [] as string[] };
   const ai = !useAi ? fallback : await teamAI(shuffled).catch((e) => { console.error("[finale] IA do time falhou:", e); return { headline: "Um time que se encontrou.", highlights: [], themes: [] }; });
 
   return {

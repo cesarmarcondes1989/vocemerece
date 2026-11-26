@@ -2,7 +2,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
-export type Slide = { key: string; duration: number; bg?: string; content: React.ReactNode };
+export type Slide = { key: string; duration: number; bg?: string; content: React.ReactNode; full?: boolean };
 
 export const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 24 },
@@ -57,7 +57,7 @@ export default function MotionPlayer({ slides, videoName }: { slides: Slide[]; v
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
             </>
           )}
-          <div className="relative mx-auto flex h-full max-w-xl flex-col items-center justify-center gap-5 px-7 py-20 text-center">{slide.content}</div>
+          <div className={`relative mx-auto flex h-full flex-col items-center justify-center gap-5 py-20 text-center ${slide.full ? "max-w-6xl px-4" : "max-w-xl px-7"}`}>{slide.content}</div>
         </motion.section>
       </AnimatePresence>
       {rec.supported && rec.state !== "recording" && (

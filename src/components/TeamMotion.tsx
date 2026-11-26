@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 import type { Comet, GameStats, Planet } from "@/lib/types";
 import MotionPlayer, { fadeUp, type Slide } from "./MotionPlayer";
+import QuoteCloud from "./QuoteCloud";
 
 /** A constelação final: todas as conexões do jogo desenhadas de uma vez. */
 function Constellation({ planets, comets }: { planets: Planet[]; comets: Pick<Comet, "from_id" | "to_id">[] }) {
@@ -58,10 +59,8 @@ export default function TeamMotion({ stats, planets, comets }: { stats: GameStat
         ))}
       </div>
     </> });
-    stats.highlights.forEach((h, i) => s.push({ key: `h${i}`, duration: Math.min(8000, 3500 + h.length * 40), content: <>
-      <motion.p {...fadeUp()} className="text-sm uppercase tracking-widest text-muted">alguém escreveu</motion.p>
-      <motion.p {...fadeUp(0.4)} className="text-3xl font-semibold leading-snug">“{h}”</motion.p>
-    </> }));
+    if (stats.highlights.length) s.push({ key: "cloud", full: true, duration: 4000 + stats.highlights.length * 500,
+      content: <QuoteCloud items={stats.highlights.map((text) => ({ text }))} title="Algumas coisas que vocês disseram uns aos outros" /> });
     if (stats.explorer) s.push({ key: "explorer", duration: 7000, content: <>
       <motion.div {...fadeUp()} className="text-8xl">🧭</motion.div>
       <motion.p {...fadeUp(0.4)} className="text-muted">Explorador(a) Intergaláctico(a)</motion.p>
