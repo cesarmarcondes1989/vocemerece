@@ -85,5 +85,5 @@ export default function TeamMotion({ stats, planets, comets }: { stats: GameStat
     </> });
     return s;
   }, [stats, planets, comets]);
-  return <MotionPlayer slides={slides} />;
+  return <MotionPlayer slides={slides} videoName={"universo-2026-o-filme-do-time"} />;
 }

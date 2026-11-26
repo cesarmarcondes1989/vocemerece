@@ -5,7 +5,7 @@ import { STICKERS } from "@/lib/types";
 import PendingButton from "@/components/PendingButton";
 import { energyColor, isGreen } from "@/lib/colors";
 import { getGame, SetupError } from "@/lib/game";
-import { backToLobby, decide, lock, decideItem, forceCapsule, revealFinale, setGreenAt, startGame, unlock } from "./actions";
+import { backToLobby, decide, lock, newGame, restartGame, decideItem, forceCapsule, revealFinale, setGreenAt, startGame, unlock } from "./actions";
 
 // a revelação chama a IA (estatísticas + cápsula da diretoria): pode levar ~1 min
 export const maxDuration = 300;
@@ -111,6 +111,24 @@ export default async function Admin() {
           {game.phase !== "lobby" && <form action={backToLobby}><button className={`${btn} border border-white/20`}>↩︎ voltar ao lobby</button></form>}
           <Link href="/admin/capsula" className={`${btn} border border-white/20`}>🏢 Cápsula da diretoria</Link>
         </div>
+        <details className="rounded-2xl bg-black/20 p-3 text-sm">
+          <summary className="cursor-pointer">🔁 Recomeçar ou criar um novo jogo</summary>
+          <div className="mt-3 space-y-3">
+            <form action={restartGame} className="space-y-1">
+              <PendingButton className={`${btn} bg-white/15`} pending="⏳ Zerando…"
+                confirm="Recomeçar? Mantém as pessoas e perfis, mas apaga TODAS as mensagens, reações, energia, cápsulas e filmes.">🔁 Recomeçar o jogo</PendingButton>
+              <p className="text-xs text-muted">Mantém pessoas e perfis. Ideal depois de um ensaio.</p>
+            </form>
+            <form action={newGame} className="space-y-1">
+              <div className="flex gap-2">
+                <input name="confirm" placeholder='digite APAGAR' className="w-32 rounded-full bg-white/10 px-3 py-2" />
+                <PendingButton className={`${btn} bg-red-500/80`} pending="⏳ Apagando…"
+                  confirm="Novo jogo? Isso apaga TUDO, inclusive as pessoas cadastradas. Não dá pra desfazer.">🧨 Novo jogo do zero</PendingButton>
+              </div>
+              <p className="text-xs text-muted">Apaga tudo, inclusive pessoas. Os links das tags continuam iguais se você recadastrar com os mesmos nomes.</p>
+            </form>
+          </div>
+        </details>
         <form action={setGreenAt} className="flex flex-wrap items-center gap-2 text-sm">
           Verde com <input name="green_at" type="number" defaultValue={game.green_at} className="w-16 rounded bg-white/10 px-2 py-1" /> de energia,
           máx. <input name="sender_cap" type="number" defaultValue={game.sender_cap} className="w-14 rounded bg-white/10 px-2 py-1" /> por pessoa

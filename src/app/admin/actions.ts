@@ -94,3 +94,33 @@ export async function decideItem(formData: FormData) {
   await db().from("profile_items").update({ status: approve ? "approved" : "rejected" }).eq("id", String(formData.get("id")));
   revalidatePath("/admin");
 }
+
+// ---------------- Recomeçar / novo jogo ----------------
+const ALL = "00000000-0000-0000-0000-000000000000";
+
+async function wipeGame() {
+  const supa = db();
+  // mensagens levam junto cometas e denúncias (cascata)
+  await supa.from("messages").delete().neq("id", ALL);
+  await supa.from("capsules").delete().neq("person_id", ALL);
+  await supa.from("board_capsule").delete().eq("id", 1);
+  await supa.from("planets").update({ energy: 0, received: 0, senders: 0, xp: 0, visited: 0, lit_at: null }).neq("id", ALL);
+  await supa.from("people").update({ finale: null }).neq("id", ALL);
+  await supa.from("game").update({ phase: "lobby", started_at: null, all_green_at: null, finale_at: null, stats: null }).eq("id", 1);
+}
+
+/** Recomeçar: mantém as pessoas e os perfis, zera mensagens, energia, cápsulas e filmes. */
+export async function restartGame() {
+  if (!(await currentModerator())) throw new Error("sem permissão");
+  await wipeGame();
+  revalidatePath("/admin");
+}
+
+/** Novo jogo: apaga TUDO, inclusive as pessoas cadastradas. Exige digitar APAGAR. */
+export async function newGame(formData: FormData) {
+  if (!(await currentModerator())) throw new Error("sem permissão");
+  if (String(formData.get("confirm")).trim().toUpperCase() !== "APAGAR") return;
+  await wipeGame();
+  await db().from("people").delete().neq("id", ALL);   // cascata: planetas, conquistas
+  revalidatePath("/admin");
+}

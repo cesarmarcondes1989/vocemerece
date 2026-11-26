@@ -63,5 +63,5 @@ export default function PersonalMotion({ data }: { data: PersonalFinale }) {
     </> });
     return s;
   }, [data]);
-  return <MotionPlayer slides={slides} />;
+  return <MotionPlayer slides={slides} videoName={`universo-2026-${data.nickname}`} />;
 }
