@@ -66,7 +66,16 @@ Mídia fica num bucket privado: o servidor só gera link para mensagens **aprova
 4. **Vercel**: importe o repo e cole as mesmas variáveis. Para uso de empresa, o plano Hobby não vale (é não comercial); use o Pro.
 5. **Domínio**: defina o `PUBLIC_BASE_URL` **antes** de gravar as tags. Ele vai gravado no plástico, literalmente.
 
-## ✍️ Conteúdo (o pipeline)
+## 👥 Cadastro pelo site (o jeito mais fácil)
+
+1. Abra `/admin` (ou o link "sou gestor(a)" na home) e entre com o `ADMIN_PIN`.
+2. **👥 Pessoas → + Nova pessoa.** Cadastre primeiro você mesmo(a), marcando "gestor(a)".
+3. Cada pessoa tem foto, manchete, até 3 momentos (com foto), números, 3 palavras, recados e agradecimento. Em **✨ Preencher com IA**, cole notas soltas e a IA organiza nos campos para você revisar.
+4. O **🔗 link** de cada pessoa é o que vai na tag. **⬇︎ Links das tags (CSV)** baixa todos de uma vez.
+
+Na Vercel, precisam estar configurados: `TOKEN_SECRET` (é ele que gera os links) e, antes de gravar as tags, `PUBLIC_BASE_URL`.
+
+## ✍️ Conteúdo em lote (alternativa por planilha)
 
 ```
 Google Forms ─► content/form.csv ─► draft-stories (IA) ─► content/stories/<slug>.json

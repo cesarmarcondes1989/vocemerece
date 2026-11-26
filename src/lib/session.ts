@@ -24,7 +24,7 @@ function verify(value: string, sig: string) {
 }
 
 export const sessionValue = (personId: string) => `${personId}.${sign(personId)}`;
-export const adminValue = (personId: string) => sign(`admin:${personId}`);
+export const adminValue = () => sign("admin");
 
 export const cookieOptions = {
   httpOnly: true,
@@ -48,13 +48,11 @@ export async function currentPerson(): Promise<Person | null> {
   return (data as Person) ?? null;
 }
 
-/** Gestor com PIN confirmado. */
-export async function currentModerator(): Promise<Person | null> {
-  const me = await currentPerson();
-  if (!me?.is_moderator) return null;
+/** Gestor com PIN confirmado (não depende de ter planeta: o primeiro gestor entra só com o PIN). */
+export async function currentModerator(): Promise<boolean> {
   const adm = (await cookies()).get(ADMIN_COOKIE)?.value;
-  if (!adm) return null;
-  const a = Buffer.from(adminValue(me.id));
+  if (!adm) return false;
+  const a = Buffer.from(adminValue());
   const b = Buffer.from(adm);
-  return a.length === b.length && timingSafeEqual(a, b) ? me : null;
+  return a.length === b.length && timingSafeEqual(a, b);
 }

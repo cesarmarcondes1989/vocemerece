@@ -20,6 +20,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
       ) : (
         <p className="text-muted">Encoste o celular no seu planetinha para começar ✨</p>
       )}
+      <Link href="/admin" className="fixed bottom-6 text-xs text-muted/60 underline">sou gestor(a)</Link>
     </main>
   );
 }

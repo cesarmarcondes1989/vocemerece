@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { currentModerator, currentPerson } from "@/lib/session";
+import { currentModerator } from "@/lib/session";
 import { db, signedUrl } from "@/lib/supabase";
 import { STICKERS } from "@/lib/types";
 import { energyColor, isGreen } from "@/lib/colors";
 import { getGame } from "@/lib/game";
-import { backToLobby, decide, decideItem, forceCapsule, revealFinale, setGreenAt, startGame, unlock } from "./actions";
+import { backToLobby, decide, lock, decideItem, forceCapsule, revealFinale, setGreenAt, startGame, unlock } from "./actions";
 
 // a revelação chama a IA (estatísticas + cápsula da diretoria): pode levar ~1 min
 export const maxDuration = 300;
@@ -18,27 +18,13 @@ type Row = {
 const SELECT = "id, kind, body, sticker, media_path, status, created_at, moderation, from:people!messages_from_id_fkey(nickname), to:people!messages_to_id_fkey(nickname), reports(reason)";
 
 export default async function Admin() {
-  const me = await currentPerson();
-  if (!me?.is_moderator)
-    return (
-      <main className="mx-auto max-w-sm space-y-3 p-8 text-center">
-        <div className="text-5xl">🛡️</div>
-        <h1 className="text-2xl font-bold">Torre de controle</h1>
-        {me ? (
-          <p className="text-muted">Você entrou como <b className="text-ink">{me.nickname}</b>, que não é gestor(a). Para entrar aqui, abra o link do planeta de um gestor (<code>is_moderator = sim</code>).</p>
-        ) : (
-          <p className="text-muted">Primeiro identifique-se: abra o <b className="text-ink">link do seu planeta</b> (o que vai na tag NFC, <code>/t/…</code>) e depois volte para <code>/admin</code>. Aí o PIN é pedido.</p>
-        )}
-      </main>
-    );
-
-  const mod = await currentModerator();
-  if (!mod)
+  if (!(await currentModerator()))
     return (
       <main className="mx-auto max-w-sm p-8">
-        <h1 className="mb-4 text-2xl font-bold">🛡️ Torre de controle</h1>
+        <h1 className="mb-1 text-2xl font-bold">🛡️ Torre de controle</h1>
+        <p className="mb-4 text-sm text-muted">Área dos gestores. Use o <code>ADMIN_PIN</code> configurado na Vercel.</p>
         <form action={unlock} className="flex gap-2">
-          <input name="pin" type="password" inputMode="numeric" placeholder="PIN dos gestores" className="flex-1 rounded-full bg-white/10 px-4 py-2" />
+          <input name="pin" type="password" inputMode="numeric" placeholder="PIN dos gestores" autoFocus className="flex-1 rounded-full bg-white/10 px-4 py-2" />
           <button className="rounded-full bg-accent px-4 py-2 font-semibold text-black">Entrar</button>
         </form>
       </main>
@@ -94,7 +80,11 @@ export default async function Admin() {
     <main className="mx-auto max-w-2xl space-y-8 p-5">
       <header className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">🛡️ Torre de controle</h1>
-        <Link href="/universo" className="text-sm underline">universo</Link>
+        <div className="flex gap-3 text-sm">
+          <Link href="/admin/pessoas" className="rounded-full bg-accent px-4 py-2 font-bold text-black">👥 Pessoas</Link>
+          <Link href="/universo" className="py-2 underline">universo</Link>
+          <form action={lock}><button className="py-2 text-muted underline">sair</button></form>
+        </div>
       </header>
       <section className="space-y-3 rounded-3xl border border-accent/30 bg-accent/5 p-4">
         <div className="flex items-center justify-between">

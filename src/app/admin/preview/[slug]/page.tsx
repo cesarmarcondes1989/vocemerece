@@ -6,11 +6,10 @@ import { currentModerator } from "@/lib/session";
 import { db } from "@/lib/supabase";
 
 export default async function Preview({ params }: PageProps<"/admin/preview/[slug]">) {
-  const mod = await currentModerator();
-  if (!mod) notFound();
+  if (!(await currentModerator())) notFound();
   const { slug } = await params;
   const { data } = await db().from("people").select("id").eq("slug", slug).maybeSingle();
-  const profile = data && (await loadProfile(data.id, mod.id));
+  const profile = data && (await loadProfile(data.id, "admin"));
   if (!profile) notFound();
   return (
     <main className="mx-auto max-w-md px-4 py-6">
