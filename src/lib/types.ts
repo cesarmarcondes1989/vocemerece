@@ -15,6 +15,7 @@ export type Person = {
   is_moderator: boolean;
   story: Story;
   consent_at: string | null;
+  photo_path: string | null;
 };
 
 export type Planet = {
@@ -25,11 +26,46 @@ export type Planet = {
   y: number;
   size: number;
   lit_at: string | null;
+  energy: number;    // energia recebida (com teto por remetente) -> cor
+  received: number;  // total recebido -> Sol do Time
+  senders: number;
+  xp: number;        // XP doado
+  visited: number;   // planetas visitados -> Explorador(a) Intergaláctico(a)
 };
+
+export type GamePhase = "lobby" | "playing" | "capsule" | "finale";
+export type Game = {
+  phase: GamePhase;
+  green_at: number;
+  sender_cap: number;
+  started_at: string | null;
+  all_green_at: string | null;
+  finale_at: string | null;
+  stats: GameStats | null;
+};
+
+export type GameStats = {
+  people: number;
+  totals: { all: number; reaction: number; comment: number; text: number; sticker: number; photo: number };
+  pairs: number;              // pares de pessoas que se conectaram
+  connectedPct: number;       // % das conexões possíveis
+  minutes: number;            // duração do jogo
+  explorer: { id: string; nickname: string; visited: number } | null;
+  sun: { id: string; nickname: string; received: number } | null;
+  topGivers: { nickname: string; xp: number }[];
+  highlights: string[];       // trechos anônimos escolhidos pela IA
+  themes: string[];           // palavras/temas que mais apareceram
+  headline: string;
+};
+
+export type ProfileItem = { id: string; text: string; emoji: string; status?: string };
 
 export type Comet = { id: string; from_id: string; to_id: string; created_at: string };
 
-export type CometKind = "text" | "sticker" | "photo" | "audio";
+export type CometKind = "text" | "sticker" | "photo" | "audio" | "reaction" | "comment";
+
+/** Reações rápidas nos itens do perfil (sem moderação: não têm texto). */
+export const REACTIONS = ["❤️", "🔥", "👏", "😂", "🚀", "🤯"] as const;
 
 /** Stickers curados: sem texto livre = sem risco. Linguagem neutra de gênero. */
 export const STICKERS = [

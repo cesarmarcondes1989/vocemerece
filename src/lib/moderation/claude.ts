@@ -13,7 +13,7 @@ export type Verdict = z.infer<typeof Verdict>;
 const MODEL = process.env.MODERATION_MODEL || "claude-opus-5-5";
 
 const POLICY = `Você é o guardião do "Universo 2026", uma página de fim de ano de um time de trabalho.
-Colegas mandam mensagens curtas, fotos e áudios de agradecimento uns para os outros.
+É um jogo ao vivo: colegas visitam o "planeta" (perfil) uns dos outros e deixam comentários, mensagens curtas e fotos de agradecimento. Pessoas também escrevem conquistas sobre si mesmas.
 O time é ZUEIRO: piada interna, provocação carinhosa, apelido, exagero cômico e até um palavrão leve de exclamação ("que ano do caralho, hein!") são OK.
 A linha é RESPEITO. Decida se a mensagem pode ser entregue:
 

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { undeliver } from "@/lib/game";
 import { currentPerson } from "@/lib/session";
 import { db } from "@/lib/supabase";
 
@@ -13,7 +14,7 @@ export async function PATCH(req: Request, ctx: RouteContext<"/api/messages/[id]"
   if (!parsed.success) return Response.json({ error: "ação inválida" }, { status: 400 });
 
   const supa = db();
-  const { data: msg } = await supa.from("messages").select("id, to_id").eq("id", id).maybeSingle();
+  const { data: msg } = await supa.from("messages").select("id, from_id, to_id").eq("id", id).maybeSingle();
   if (!msg || msg.to_id !== me.id) return Response.json({ error: "não encontrada" }, { status: 404 });
 
   const { action, reason } = parsed.data;
@@ -22,7 +23,7 @@ export async function PATCH(req: Request, ctx: RouteContext<"/api/messages/[id]"
   if (action === "report") {
     await supa.from("reports").insert({ message_id: id, reporter_id: me.id, reason: reason ?? null });
     await supa.from("messages").update({ hidden: true, status: "review" }).eq("id", id);
-    await supa.from("comets").delete().eq("id", id);
+    await undeliver(msg);
   }
   return Response.json({ ok: true });
 }

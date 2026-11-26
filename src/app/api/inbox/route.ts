@@ -11,7 +11,7 @@ export async function GET() {
   const [{ data: inbox }, { data: sent }] = await Promise.all([
     supa
       .from("messages")
-      .select("id, kind, body, sticker, media_path, capsule, read_at, created_at, from:people!messages_from_id_fkey(nickname)")
+      .select("id, kind, body, sticker, item_ref, media_path, capsule, read_at, created_at, from:people!messages_from_id_fkey(nickname)")
       .eq("to_id", me.id).eq("status", "approved").eq("hidden", false)
       .order("created_at", { ascending: false }),
     supa
@@ -27,7 +27,7 @@ export async function GET() {
     (inbox ?? []).map(async (m) => {
       const sealed = m.capsule && locked;
       return {
-        id: m.id, kind: m.kind, capsule: m.capsule, sealed, read: !!m.read_at, created_at: m.created_at,
+        id: m.id, kind: m.kind, itemRef: m.item_ref, capsule: m.capsule, sealed, read: !!m.read_at, created_at: m.created_at,
         from: (m.from as unknown as { nickname: string } | null)?.nickname ?? "alguém",
         body: sealed ? null : m.body,
         sticker: sealed ? null : m.sticker,

@@ -3,7 +3,7 @@
 // Uso: node --env-file=.env.local scripts/import.mjs [--dry]
 //
 // Entrada:
-//   content/people.csv          slug,name,nickname,color,is_moderator
+//   content/people.csv          slug,name,nickname,color,is_moderator,photo  (photo = arquivo em content/photos, a fotinho do perfil)
 //   content/stories/<slug>.json história revisada (ver content/stories/exemplo.json)
 //   content/photos/<arquivo>    fotos citadas nas histórias ("photo": "arquivo.jpg")
 import { createHash, createHmac } from "node:crypto";
@@ -56,11 +56,27 @@ for (const [i, p] of people.entries()) {
     m.photo = remote;
   }
 
+  let photoPath = null;
+  if (p.photo) {
+    const local = join("content/photos", p.photo);
+    if (!existsSync(local)) { console.error(`✗ ${p.slug}: foto de perfil não encontrada ${local}`); problems++; }
+    else {
+      photoPath = `${p.slug}/perfil${extname(local).toLowerCase()}`;
+      if (!DRY) {
+        const { error } = await supa.storage.from("stories").upload(photoPath, readFileSync(local), {
+          upsert: true, contentType: MIME[extname(local).toLowerCase()] ?? "image/jpeg",
+        });
+        if (error) { console.error(`✗ upload ${local}:`, error.message); problems++; }
+      }
+    }
+  }
+
   const token = tokenFor(p.slug);
   const { x, y } = position(i, people.length);
   const row = {
     slug: p.slug, name: p.name, nickname: p.nickname || p.name.split(" ")[0],
     is_moderator: /^(1|true|sim|s|x)$/i.test(p.is_moderator ?? ""), token_hash: sha(token), story,
+    ...(photoPath ? { photo_path: photoPath } : {}),
   };
 
   if (!DRY) {

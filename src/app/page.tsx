@@ -13,8 +13,8 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         <>
           <p className="text-muted">Bem-vindo(a) de volta, {me.nickname}.</p>
           <div className="flex gap-3">
-            <Link href="/eu" className="rounded-full border border-white/20 px-5 py-3">Rever minha história</Link>
-            <Link href="/universo" className="rounded-full bg-accent px-5 py-3 font-semibold text-black">Universo</Link>
+            <Link href="/eu" className="rounded-full border border-white/20 px-5 py-3">Meu planeta</Link>
+            <Link href="/universo" className="rounded-full bg-accent px-5 py-3 font-semibold text-black">Jogar 🚀</Link>
           </div>
         </>
       ) : (

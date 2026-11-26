@@ -42,7 +42,7 @@ export async function currentPerson(): Promise<Person | null> {
   if (!id || !sig || !verify(id, sig)) return null;
   const { data } = await db()
     .from("people")
-    .select("id, slug, name, nickname, is_moderator, story, consent_at")
+    .select("id, slug, name, nickname, is_moderator, story, consent_at, photo_path")
     .eq("id", id)
     .maybeSingle();
   return (data as Person) ?? null;

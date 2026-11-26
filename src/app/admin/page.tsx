@@ -2,7 +2,12 @@ import Link from "next/link";
 import { currentModerator, currentPerson } from "@/lib/session";
 import { db, signedUrl } from "@/lib/supabase";
 import { STICKERS } from "@/lib/types";
-import { decide, unlock } from "./actions";
+import { energyColor, isGreen } from "@/lib/colors";
+import { getGame } from "@/lib/game";
+import { backToLobby, decide, decideItem, forceCapsule, revealFinale, setGreenAt, startGame, unlock } from "./actions";
+
+// a revelação chama a IA (estatísticas + cápsula da diretoria): pode levar ~1 min
+export const maxDuration = 300;
 
 type Row = {
   id: string; kind: string; body: string | null; sticker: string | null; media_path: string | null; status: string;
@@ -29,6 +34,15 @@ export default async function Admin() {
     );
 
   const supa = db();
+  const [game, { data: planets }, { data: items }, { count: capsules }] = await Promise.all([
+    getGame(),
+    supa.from("planets").select("id, nickname, energy, senders, lit_at").order("energy"),
+    supa.from("profile_items").select("id, text, emoji, moderation, person:people(nickname)").eq("status", "review"),
+    supa.from("capsules").select("person_id", { count: "exact", head: true }),
+  ]);
+  const greens = (planets ?? []).filter((p) => isGreen(p.energy, game.green_at)).length;
+  const care = (planets ?? []).filter((p) => !isGreen(p.energy, game.green_at)).slice(0, 8);
+  const btn = "rounded-full px-4 py-2 text-sm font-semibold";
   const [{ data: review }, { data: rejected }, { data: people }, { count: approved }, { count: lit }] = await Promise.all([
     supa.from("messages").select(SELECT).eq("status", "review").order("created_at"),
     supa.from("messages").select(SELECT).eq("status", "rejected").order("created_at", { ascending: false }).limit(20),
@@ -71,9 +85,44 @@ export default async function Admin() {
         <h1 className="text-2xl font-bold">🛡️ Torre de controle</h1>
         <Link href="/universo" className="text-sm underline">universo</Link>
       </header>
+      <section className="space-y-3 rounded-3xl border border-accent/30 bg-accent/5 p-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold">🎮 Jogo: <span className="text-accent">{({ lobby: "Lobby", playing: "Valendo!", capsule: "Cápsulas", finale: "Final" } as const)[game.phase]}</span></h2>
+          <span className="text-sm">{greens}/{planets?.length ?? 0} verdes · {capsules ?? 0} cápsulas</span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {game.phase === "lobby" && <form action={startGame}><button className={`${btn} bg-emerald-400 text-black`}>🚀 Dar a largada</button></form>}
+          {game.phase === "playing" && <form action={forceCapsule}><button className={`${btn} bg-white/15`}>⏭️ Encerrar e ir pras cápsulas</button></form>}
+          {(game.phase === "capsule" || game.phase === "playing") && <form action={revealFinale}><button className={`${btn} bg-accent text-black`}>🎬 Grande revelação (gera filmes + cápsula da diretoria)</button></form>}
+          {game.phase === "finale" && <Link href="/final/time" className={`${btn} bg-accent text-black`}>🎬 Filme do time (telão)</Link>}
+          {game.phase !== "lobby" && <form action={backToLobby}><button className={`${btn} border border-white/20`}>↩︎ voltar ao lobby</button></form>}
+          <Link href="/admin/capsula" className={`${btn} border border-white/20`}>🏢 Cápsula da diretoria</Link>
+        </div>
+        <form action={setGreenAt} className="flex flex-wrap items-center gap-2 text-sm">
+          Verde com <input name="green_at" type="number" defaultValue={game.green_at} className="w-16 rounded bg-white/10 px-2 py-1" /> de energia,
+          máx. <input name="sender_cap" type="number" defaultValue={game.sender_cap} className="w-14 rounded bg-white/10 px-2 py-1" /> por pessoa
+          <button className="rounded-full bg-white/10 px-3 py-1">salvar</button>
+        </form>
+        <p className="text-xs text-muted">Energia: reação 1 · sticker 2 · comentário 3 · mensagem 4 · foto 5. Com 30 e teto 8, cada planeta precisa de pelo menos 4 pessoas diferentes (na prática, 8–12). Dá pra ajustar AO VIVO: jogo rápido demais? Aumenta. Travou? Diminui.</p>
+      </section>
+
+      {game.phase === "playing" && care.length > 0 && (
+        <section className="rounded-3xl bg-white/5 p-4">
+          <h2 className="font-bold">💛 Precisando de carinho <span className="text-xs font-normal text-muted">(só gestores veem: dá um empurrãozinho discreto no grupo)</span></h2>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {care.map((p) => (
+              <span key={p.id} className="flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-sm">
+                <span className="h-3 w-3 rounded-full" style={{ background: energyColor(p.energy, game.green_at) }} />
+                {p.nickname} <span className="text-muted">{p.energy}/{game.green_at}{!p.lit_at && " · 💤 não entrou"}</span>
+              </span>
+            ))}
+          </div>
+        </section>
+      )}
+
       <div className="grid grid-cols-3 gap-3 text-center">
         <div className="rounded-2xl bg-white/5 p-3"><div className="text-3xl font-black text-accent">{lit ?? 0}</div><div className="text-xs">planetas acesos</div></div>
-        <div className="rounded-2xl bg-white/5 p-3"><div className="text-3xl font-black text-accent">{approved ?? 0}</div><div className="text-xs">cometas entregues</div></div>
+        <div className="rounded-2xl bg-white/5 p-3"><div className="text-3xl font-black text-accent">{approved ?? 0}</div><div className="text-xs">interações</div></div>
         <div className="rounded-2xl bg-white/5 p-3"><div className="text-3xl font-black text-accent">{review?.length ?? 0}</div><div className="text-xs">na fila</div></div>
       </div>
 
@@ -82,6 +131,25 @@ export default async function Admin() {
         {review?.length ? <ul className="space-y-3">{await Promise.all((review as unknown as Row[]).map((m) => card(m, true)))}</ul>
           : <p className="text-muted">Fila zerada. Céu limpo ✨</p>}
       </section>
+
+      {!!items?.length && (
+        <section>
+          <h2 className="mb-3 text-lg font-bold">Conquistas adicionadas (revisão)</h2>
+          <ul className="space-y-3">
+            {(items as unknown as { id: string; text: string; emoji: string; moderation: { reason?: string }; person: { nickname: string } | null }[]).map((it) => (
+              <li key={it.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <p className="text-sm text-muted"><b className="text-ink">{it.person?.nickname}</b> · 🤖 {it.moderation?.reason}</p>
+                <p className="mt-1">{it.emoji} {it.text}</p>
+                <form action={decideItem} className="mt-3 flex gap-2">
+                  <input type="hidden" name="id" value={it.id} />
+                  <button name="decision" value="approve" className="flex-1 rounded-full bg-emerald-500 py-2 font-semibold text-black">Aprovar</button>
+                  <button name="decision" value="reject" className="flex-1 rounded-full bg-red-500/80 py-2 font-semibold">Barrar</button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section>
         <h2 className="mb-1 text-lg font-bold">Barradas pela IA (últimas 20)</h2>

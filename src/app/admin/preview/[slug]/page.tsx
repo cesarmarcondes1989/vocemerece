@@ -1,14 +1,21 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import StoryPlayer from "@/components/StoryPlayer";
+import ProfileView from "@/components/ProfileView";
+import { loadProfile } from "@/lib/profile";
 import { currentModerator } from "@/lib/session";
-import { withPhotoUrls } from "@/lib/story";
 import { db } from "@/lib/supabase";
-import type { Story } from "@/lib/types";
 
 export default async function Preview({ params }: PageProps<"/admin/preview/[slug]">) {
-  if (!(await currentModerator())) notFound();
+  const mod = await currentModerator();
+  if (!mod) notFound();
   const { slug } = await params;
-  const { data } = await db().from("people").select("nickname, story").eq("slug", slug).maybeSingle();
-  if (!data) notFound();
-  return <StoryPlayer preview nickname={data.nickname} story={await withPhotoUrls(data.story as Story)} />;
+  const { data } = await db().from("people").select("id").eq("slug", slug).maybeSingle();
+  const profile = data && (await loadProfile(data.id, mod.id));
+  if (!profile) notFound();
+  return (
+    <main className="mx-auto max-w-md px-4 py-6">
+      <Link href="/admin" className="mb-3 inline-block text-sm underline">← Torre de controle</Link>
+      <ProfileView data={profile} mode={{ kind: "visit", canInteract: false, onXp: () => {} }} />
+    </main>
+  );
 }
