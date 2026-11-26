@@ -5,8 +5,16 @@ import type { CometKind, Game } from "./types";
 /** Energia que cada interação entrega ao planeta que recebe. */
 export const POINTS: Record<CometKind, number> = { reaction: 1, sticker: 2, comment: 3, text: 4, photo: 5, audio: 4 };
 
+export class SetupError extends Error {}
+
 export async function getGame(): Promise<Game> {
-  const { data } = await db().from("game").select("*").eq("id", 1).single();
+  const { data, error } = await db().from("game").select("*").eq("id", 1).maybeSingle();
+  if (error || !data)
+    throw new SetupError(
+      error?.code === "42P01" || error?.message?.includes("game")
+        ? "A tabela do jogo não existe no Supabase. Rode supabase/migrations/0001_init.sql e depois 0002_jogo.sql no SQL Editor."
+        : `Não consegui ler o estado do jogo (${error?.message ?? "linha 'game' ausente"}). Rode 0002_jogo.sql no SQL Editor do Supabase.`,
+    );
   return data as Game;
 }
 

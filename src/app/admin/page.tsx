@@ -3,7 +3,7 @@ import { currentModerator } from "@/lib/session";
 import { db, signedUrl } from "@/lib/supabase";
 import { STICKERS } from "@/lib/types";
 import { energyColor, isGreen } from "@/lib/colors";
-import { getGame } from "@/lib/game";
+import { getGame, SetupError } from "@/lib/game";
 import { backToLobby, decide, lock, decideItem, forceCapsule, revealFinale, setGreenAt, startGame, unlock } from "./actions";
 
 // a revelação chama a IA (estatísticas + cápsula da diretoria): pode levar ~1 min
@@ -31,6 +31,11 @@ export default async function Admin() {
     );
 
   const supa = db();
+  try {
+    await getGame();
+  } catch (e) {
+    return <SetupNeeded message={e instanceof SetupError ? e.message : String(e)} />;
+  }
   const [game, { data: planets }, { data: items }, { count: capsules }] = await Promise.all([
     getGame(),
     supa.from("planets").select("id, nickname, energy, senders, lit_at").order("energy"),
@@ -166,6 +171,21 @@ export default async function Admin() {
           ))}
         </div>
       </section>
+    </main>
+  );
+}
+
+function SetupNeeded({ message }: { message: string }) {
+  return (
+    <main className="mx-auto max-w-lg space-y-4 p-8">
+      <h1 className="text-2xl font-bold">🛠️ Falta configurar o Supabase</h1>
+      <p className="rounded-2xl bg-red-500/15 p-4 text-red-100">{message}</p>
+      <ol className="list-decimal space-y-2 pl-5 text-sm text-muted">
+        <li>Abra o projeto no Supabase → <b className="text-ink">SQL Editor</b> → New query.</li>
+        <li>Cole o conteúdo de <code>supabase/migrations/0001_init.sql</code> (do GitHub) e clique em <b className="text-ink">Run</b>.</li>
+        <li>Repita com <code>supabase/migrations/0002_jogo.sql</code>.</li>
+        <li>Volte aqui e recarregue a página.</li>
+      </ol>
     </main>
   );
 }
