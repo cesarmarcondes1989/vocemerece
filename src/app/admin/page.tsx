@@ -19,7 +19,18 @@ const SELECT = "id, kind, body, sticker, media_path, status, created_at, moderat
 
 export default async function Admin() {
   const me = await currentPerson();
-  if (!me?.is_moderator) return <main className="p-8 text-center">Área dos gestores 🛡️</main>;
+  if (!me?.is_moderator)
+    return (
+      <main className="mx-auto max-w-sm space-y-3 p-8 text-center">
+        <div className="text-5xl">🛡️</div>
+        <h1 className="text-2xl font-bold">Torre de controle</h1>
+        {me ? (
+          <p className="text-muted">Você entrou como <b className="text-ink">{me.nickname}</b>, que não é gestor(a). Para entrar aqui, abra o link do planeta de um gestor (<code>is_moderator = sim</code>).</p>
+        ) : (
+          <p className="text-muted">Primeiro identifique-se: abra o <b className="text-ink">link do seu planeta</b> (o que vai na tag NFC, <code>/t/…</code>) e depois volte para <code>/admin</code>. Aí o PIN é pedido.</p>
+        )}
+      </main>
+    );
 
   const mod = await currentModerator();
   if (!mod)
