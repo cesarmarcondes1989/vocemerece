@@ -54,7 +54,7 @@ Mídia fica num bucket privado: o servidor só gera link para mensagens **aprova
 
 ## 🚀 Setup (uma vez)
 
-1. **Supabase**: crie o projeto. No SQL Editor, rode `0001_init.sql` e depois `0002_jogo.sql` (pasta `supabase/migrations/`).
+1. **Supabase**: crie o projeto. No SQL Editor, rode, em ordem, `0001_init.sql`, `0002_jogo.sql`, `0003_reparo.sql` e `0004_permissoes.sql` (pasta `supabase/migrations/`).
 2. **Variáveis**: `cp .env.example .env.local` e preencha. Gere os segredos com `openssl rand -base64 48`.
 3. **Rodar local**:
    ```bash
