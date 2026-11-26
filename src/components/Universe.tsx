@@ -34,6 +34,7 @@ export default function Universe({ me, initialPlanets, initialComets, initialGam
   const [inboxOpen, setInboxOpen] = useState(false);
   const [hasCapsule, setHasCapsule] = useState(me.hasCapsule);
   const [seed, setSeed] = useState(1);
+  const [hideFinale, setHideFinale] = useState(false);
 
   // Polling leve (a cada 3s) no retrato cacheado do universo. Cometas novos "voam" na tela.
   useEffect(() => {
@@ -172,12 +173,16 @@ export default function Universe({ me, initialPlanets, initialComets, initialGam
             </div>
           </motion.div>
         )}
-        {game.phase === "finale" && (
+        {game.phase === "finale" && !hideFinale && (
           <motion.div key="fin" className="fixed inset-0 z-40 grid place-items-center bg-space/95 p-6 text-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <div className="space-y-5">
               <div className="text-7xl">🎬</div>
               <h1 className="text-3xl font-black">Seu filme está pronto</h1>
               <Link href="/final" className="inline-block rounded-full bg-accent px-8 py-4 text-lg font-black text-black">Assistir ▶</Link>
+              <div className="flex justify-center gap-4 text-sm">
+                <Link href="/final/time" className="underline">filme do time</Link>
+                <button onClick={() => setHideFinale(true)} className="underline">ver a constelação</button>
+              </div>
             </div>
           </motion.div>
         )}
