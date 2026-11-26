@@ -1,6 +1,6 @@
 "use server";
 import { createHash, randomBytes } from "node:crypto";
-import { deliver, getGame, POINTS } from "@/lib/game";
+import { getGame, POINTS } from "@/lib/game";
 import { slotFor } from "@/lib/people";
 import { currentModerator } from "@/lib/session";
 import { db } from "@/lib/supabase";
@@ -48,60 +48,99 @@ export async function simCreate(n: number) {
   }
 }
 
-/** Uma rodada: `count` robôs fazem uma ação cada. Chamada a cada ~2s pela tela do simulador. */
-export async function simTick(count: number) {
+export type SimReport = { ok: boolean; message: string; greens: number; total: number; phase: string };
+
+/**
+ * Uma rodada de simulação, numa chamada só: robôs mandam `count` interações (gravadas em lote),
+ * a energia é recalculada e, se todos ficarem verdes, os robôs escrevem as cápsulas.
+ * Se o jogo estiver no lobby, dá a largada sozinho.
+ */
+export async function simRound(count: number, untilGreen = false): Promise<SimReport> {
   await guard();
   const supa = db();
-  const game = await getGame();
-  const [{ data: bots }, { data: planets }] = await Promise.all([
-    supa.from("people").select("id").like("slug", "sim-%"),
-    supa.from("planets").select("id, energy"),
-  ]);
-  const ids = (bots ?? []).map((b) => b.id);
-  const ps = planets ?? [];
-  const greens = ps.filter((p) => p.energy >= game.green_at).length;
-  const status = { phase: game.phase, greens, total: ps.length, bots: ids.length, sent: 0, error: null as string | null };
-  // robôs sempre "a bordo" (o Recomeçar zera o lit_at)
-  await supa.from("planets").update({ lit_at: new Date().toISOString() }).in("id", ids).is("lit_at", null);
-  if (!ids.length || game.phase === "lobby" || game.phase === "finale") return status;
-
-  if (game.phase === "capsule") {
-    const { data: done } = await supa.from("capsules").select("person_id").in("person_id", ids);
-    const have = new Set((done ?? []).map((c) => c.person_id));
-    const rows = ids.filter((id) => !have.has(id)).map((id) => ({
-      person_id: id, para_mim: "Querido eu de 2027: espero que você tenha descansado e aprendido algo novo.",
-      para_empresa: Math.random() < 0.8 ? pick(CAPSULES) : null,
-    }));
-    if (rows.length) await supa.from("capsules").insert(rows);
-    return status;
-  }
-
-  const needy = [...ps].filter((p) => p.energy < game.green_at).sort((a, b) => a.energy - b.energy);
-  for (let k = 0; k < count; k++) {
-    const from = pick(ids);
-    const pool = Math.random() < 0.5 && needy.length ? needy.slice(0, 10) : ps;
-    const to = pick(pool.filter((p) => p.id !== from))?.id;
-    if (!to) continue;
-    const r = Math.random();
-    const kind = r < 0.5 ? "reaction" : r < 0.65 ? "sticker" : r < 0.9 ? "comment" : "text";
-    const { data: msg, error } = await supa.from("messages").insert({
-      from_id: from, to_id: to, kind, status: "approved", points: POINTS[kind], xp: POINTS[kind] * 2,
-      sticker: kind === "reaction" ? pick(REACTIONS) : kind === "sticker" ? pick(STICKERS).id : null,
-      item_ref: kind === "reaction" || kind === "comment" ? pick(REFS) : null,
-      body: kind === "comment" || kind === "text" ? pick(COMMENTS) : null,
-      moderation: { layer: "simulador" },
-    }).select("id, from_id, to_id").maybeSingle();
-    if (error && error.code !== "23505") {            // 23505 = reação repetida: normal, só ignora
-      status.error = `${error.code ?? ""} ${error.message}`;
-      console.error("[simulador] falha ao inserir:", error);
-      break;
+  const fail = (message: string): SimReport => ({ ok: false, message, greens: 0, total: 0, phase: "?" });
+  try {
+    let game = await getGame();
+    if (game.phase === "finale") return fail("O jogo está no Final. Use 🔁 Recomeçar o jogo na Torre de controle.");
+    if (game.phase === "lobby") {
+      await supa.from("game").update({ phase: "playing", started_at: new Date().toISOString() }).eq("id", 1);
+      game = await getGame();
     }
-    if (msg) {
-      try { await deliver(msg); status.sent++; }
-      catch (e) { status.error = `deliver: ${(e as Error).message}`; console.error("[simulador] deliver:", e); break; }
+    const { data: bots, error: eb } = await supa.from("people").select("id").like("slug", "sim-%");
+    if (eb) return fail(`Ler robôs: ${eb.message}`);
+    const ids = (bots ?? []).map((b) => b.id);
+    if (!ids.length) return fail("Nenhum robô. Crie robôs primeiro.");
+    await supa.from("planets").update({ lit_at: new Date().toISOString() }).in("id", ids).is("lit_at", null);
+
+    let sent = 0;
+    for (let round = 0; round < (untilGreen ? 40 : 1); round++) {
+      const { data: planets, error: ep } = await supa.from("planets").select("id, energy");
+      if (ep) return fail(`Ler planetas: ${ep.message}`);
+      const ps = planets ?? [];
+      const needy = ps.filter((p) => p.energy < game.green_at).sort((a, b) => a.energy - b.energy);
+      if (game.phase !== "playing" || needy.length === 0) break;
+
+      const seen = new Set<string>();
+      const rows = [];
+      for (let k = 0; k < count; k++) {
+        const from = pick(ids);
+        const pool = Math.random() < 0.6 ? needy.slice(0, 15) : ps;
+        const to = pick(pool.filter((p) => p.id !== from))?.id;
+        if (!to) continue;
+        const r = Math.random();
+        const kind = r < 0.45 ? "reaction" : r < 0.65 ? "sticker" : r < 0.9 ? "comment" : "text";
+        const sticker = kind === "reaction" ? pick(REACTIONS) : kind === "sticker" ? pick(STICKERS).id : null;
+        const item_ref = kind === "reaction" || kind === "comment" ? pick(REFS) : null;
+        if (kind === "reaction") {
+          const key = `${from}|${to}|${item_ref}|${sticker}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+        }
+        rows.push({
+          from_id: from, to_id: to, kind, status: "approved", points: POINTS[kind], xp: POINTS[kind] * 2, sticker, item_ref,
+          body: kind === "comment" || kind === "text" ? pick(COMMENTS) : null, moderation: { layer: "simulador" },
+        });
+      }
+      let { data: inserted, error } = await supa.from("messages").insert(rows).select("id, from_id, to_id");
+      if (error?.code === "23505") {   // reação que já existia de uma rodada anterior: manda o lote sem reações
+        ({ data: inserted, error } = await supa.from("messages").insert(rows.filter((r) => r.kind !== "reaction")).select("id, from_id, to_id"));
+      }
+      if (error) return fail(`Gravar mensagens: ${error.code} ${error.message}`);
+      const msgs = inserted ?? [];
+      sent += msgs.length;
+      if (msgs.length) {
+        const { error: ec } = await supa.from("comets").insert(msgs);
+        if (ec) return fail(`Gravar cometas: ${ec.code} ${ec.message}`);
+      }
+      // recalcula energia/XP de todo mundo que mandou ou recebeu (e encerra o jogo se todos ficaram verdes)
+      for (const pid of new Set(msgs.flatMap((m) => [m.from_id, m.to_id]))) {
+        const { error: er } = await supa.rpc("recompute", { receiver: pid, giver: pid });
+        if (er) return fail(`Recalcular energia: ${er.code} ${er.message}`);
+      }
+      game = await getGame();
     }
+
+    if (game.phase === "capsule") {
+      const { data: done } = await supa.from("capsules").select("person_id").in("person_id", ids);
+      const have = new Set((done ?? []).map((c) => c.person_id));
+      const caps = ids.filter((id) => !have.has(id)).map((id) => ({
+        person_id: id, para_mim: "Querido eu de 2027: espero que você tenha descansado e aprendido algo novo.",
+        para_empresa: Math.random() < 0.8 ? pick(CAPSULES) : null,
+      }));
+      if (caps.length) await supa.from("capsules").insert(caps);
+    }
+
+    const { data: after } = await supa.from("planets").select("energy");
+    const greens = (after ?? []).filter((p) => p.energy >= game.green_at).length;
+    const total = after?.length ?? 0;
+    const msg = game.phase === "capsule"
+      ? `🎉 ${sent} interações. TODOS VERDES! Robôs escreveram as cápsulas. Agora: 🎬 Grande revelação na Torre.`
+      : `✓ ${sent} interações enviadas. ${greens}/${total} planetas verdes.${greens < total ? "" : ""}`;
+    return { ok: true, message: msg, greens, total, phase: game.phase };
+  } catch (e) {
+    console.error("[simulador]", e);
+    return fail(e instanceof Error ? e.message : String(e));
   }
-  return status;
 }
 
 /** Apaga os robôs (e tudo que eles mandaram/receberam) e recalcula a energia das pessoas reais. */

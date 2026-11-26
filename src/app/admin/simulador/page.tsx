@@ -4,6 +4,8 @@ import Simulator from "@/components/Simulator";
 import { currentModerator } from "@/lib/session";
 import { db } from "@/lib/supabase";
 
+export const maxDuration = 60;
+
 export default async function SimuladorPage() {
   if (!(await currentModerator())) redirect("/admin");
   const { count } = await db().from("people").select("id", { count: "exact", head: true }).like("slug", "sim-%");

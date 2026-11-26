@@ -1,86 +1,62 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-import { simClear, simCreate, simTick } from "@/app/admin/simulador/actions";
-import { startGame } from "@/app/admin/actions";
-
-type Status = Awaited<ReturnType<typeof simTick>>;
-const PHASE = { lobby: "Lobby (aguardando largada)", playing: "Valendo!", capsule: "Todos verdes → cápsulas", finale: "Final" } as const;
+import { useState } from "react";
+import { simClear, simCreate, simRound, type SimReport } from "@/app/admin/simulador/actions";
 
 export default function Simulator({ initialBots }: { initialBots: number }) {
-  const [n, setN] = useState(30);
-  const [speed, setSpeed] = useState(8);
-  const [running, setRunning] = useState(false);
-  const [busy, setBusy] = useState<string | null>(null);
-  const [st, setSt] = useState<Status | null>(null);
+  const [n, setN] = useState(20);
   const [bots, setBots] = useState(initialBots);
-  const [sent, setSent] = useState(0);
-  const [lastTick, setLastTick] = useState<string | null>(null);
-  const [err, setErr] = useState<string | null>(null);
-  const inFlight = useRef(false);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [report, setReport] = useState<SimReport | null>(null);
+  const [note, setNote] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!running) return;
-    const t = setInterval(async () => {
-      if (inFlight.current) return;
-      inFlight.current = true;
-      try {
-        const s = await simTick(speed);
-        setSt(s); setBots(s.bots); setSent((x) => x + s.sent); setErr(s.error);
-        setLastTick(new Date().toLocaleTimeString("pt-BR"));
-        if (s.phase === "finale" || s.error) setRunning(false);
-      } catch (e) {
-        setErr(e instanceof Error ? e.message : String(e)); setRunning(false);
-      } finally { inFlight.current = false; }
-    }, 2000);
-    return () => clearInterval(t);
-  }, [running, speed]);
-
-  const act = async (label: string, fn: () => Promise<unknown>) => { setBusy(label); try { await fn(); } finally { setBusy(null); } };
-  const btn = "rounded-full px-4 py-2 text-sm font-semibold disabled:opacity-40";
+  async function run(label: string, fn: () => Promise<void>) {
+    setBusy(label); setNote(null);
+    try { await fn(); } catch (e) { setNote(`⚠️ ${e instanceof Error ? e.message : String(e)}`); }
+    finally { setBusy(null); }
+  }
+  const btn = "rounded-full px-5 py-3 font-bold disabled:opacity-40";
 
   return (
     <div className="space-y-4">
       <section className="space-y-3 rounded-3xl bg-white/5 p-4">
-        <h2 className="font-bold">1. Robôs <span className="font-normal text-muted">({bots} no jogo)</span></h2>
+        <h2 className="font-bold">1. Robôs <span className="font-normal text-muted">({bots} criados)</span></h2>
         <div className="flex flex-wrap items-center gap-2">
           <input type="number" min={1} max={70} value={n} onChange={(e) => setN(Number(e.target.value))} className="w-20 rounded-full bg-white/10 px-3 py-2" />
           <button disabled={!!busy} className={`${btn} bg-white text-black`}
-            onClick={() => act("Criando robôs…", async () => { await simCreate(n); setBots((b) => b + Math.min(n, 70)); })}>+ Criar robôs</button>
+            onClick={() => run("Criando robôs…", async () => { await simCreate(n); setBots((b) => b + Math.min(n, 70)); setNote(`✓ ${Math.min(n, 70)} robôs criados`); })}>+ Criar robôs</button>
           <button disabled={!!busy || bots === 0} className={`${btn} border border-red-400/60 text-red-200`}
-            onClick={() => confirm("Apagar todos os robôs e tudo que eles mandaram?") && act("Apagando…", async () => { setRunning(false); await simClear(); setBots(0); setSt(null); })}>
+            onClick={() => confirm("Apagar todos os robôs e tudo que eles mandaram?") && run("Apagando robôs…", async () => { await simClear(); setBots(0); setReport(null); setNote("✓ Robôs apagados"); })}>
             Apagar robôs
           </button>
         </div>
+        <p className="text-xs text-muted">Para um ensaio rápido, 15–25 robôs bastam.</p>
       </section>
 
       <section className="space-y-3 rounded-3xl bg-white/5 p-4">
         <h2 className="font-bold">2. Jogar</h2>
-        <label className="flex items-center gap-3 text-sm">
-          Ritmo: <input type="range" min={1} max={30} value={speed} onChange={(e) => setSpeed(Number(e.target.value))} />
-          <span className="text-muted">{speed} ações a cada 2s {speed <= 5 ? "(gente calma)" : speed >= 20 ? "(turbo)" : ""}</span>
-        </label>
+        <p className="text-sm text-muted">Se o jogo estiver no lobby, a largada é dada automaticamente. Deixe o <b>/universo</b> aberto em outra aba para ver os cometas e as cores mudando.</p>
         <div className="flex flex-wrap gap-2">
-          {st?.phase === "lobby" && <button disabled={!!busy} className={`${btn} bg-emerald-400 text-black`} onClick={() => act("Largada!", async () => { await startGame(); })}>🚀 Dar a largada</button>}
-          <button disabled={bots === 0} onClick={() => setRunning((r) => !r)} className={`${btn} ${running ? "bg-white/15" : "bg-accent text-black"}`}>
-            {running ? "⏸ Pausar robôs" : "▶ Robôs, joguem!"}
-          </button>
+          <button disabled={!!busy || bots === 0} className={`${btn} bg-accent text-black`}
+            onClick={() => run("Robôs jogando uma rodada…", async () => setReport(await simRound(60)))}>⚡ Uma rodada (60 interações)</button>
+          <button disabled={!!busy || bots === 0} className={`${btn} bg-emerald-400 text-black`}
+            onClick={() => run("Jogando até todo mundo ficar verde… (até ~40s)", async () => setReport(await simRound(150, true)))}>🏁 Jogar até todos verdes</button>
         </div>
-        {st && (
-          <div className="space-y-2 text-sm">
-            <p>Fase: <b className="text-accent">{PHASE[st.phase]}</b></p>
-            <div className="h-3 overflow-hidden rounded-full bg-white/10">
-              <div className="h-full bg-gradient-to-r from-[#6b7cff] to-[#3ee08f] transition-all" style={{ width: `${(st.greens / Math.max(1, st.total)) * 100}%` }} />
-            </div>
-            <p className="text-muted">{st.greens}/{st.total} planetas verdes{st.phase === "capsule" && " · robôs escrevendo cápsulas… agora é com você: 🎬 Grande revelação na Torre"}</p>
-          </div>
-        )}
-        {running && !st && <p className="text-sm text-muted">Conectando…</p>}
-        {st?.phase === "lobby" && <p className="rounded-xl bg-accent/10 p-2 text-sm">O jogo está no <b>Lobby</b>: os robôs só jogam depois da 🚀 largada.</p>}
-        {(running || sent > 0) && <p className="text-xs text-muted">{running ? "🟢 rodando" : "⏸ pausado"} · {sent} interações enviadas{lastTick && ` · última rodada ${lastTick}`}</p>}
-        {err && <p className="rounded-xl bg-red-500/20 p-3 text-sm text-red-100">⚠️ {err}</p>}
+        <p className="text-xs text-muted">Dica: clique ⚡ algumas vezes com o universo aberto para ver o mapa mudando aos poucos. Use 🏁 para pular direto pro final.</p>
       </section>
-      {busy && <p className="animate-pulse text-sm">{busy}</p>}
-      <p className="text-xs text-muted">Dica: depois do ensaio, use <b>🔁 Recomeçar o jogo</b> na Torre de controle e <b>Apagar robôs</b> aqui.</p>
+
+      {busy && <p className="animate-pulse rounded-2xl bg-white/5 p-3">⏳ {busy}</p>}
+      {note && <p className="rounded-2xl bg-white/5 p-3 text-sm">{note}</p>}
+      {report && (
+        <div className={`rounded-2xl p-4 ${report.ok ? "bg-emerald-500/15" : "bg-red-500/20"}`}>
+          <p className="font-semibold">{report.ok ? report.message : `⚠️ ${report.message}`}</p>
+          {report.ok && (
+            <div className="mt-2 h-3 overflow-hidden rounded-full bg-white/10">
+              <div className="h-full bg-gradient-to-r from-[#6b7cff] to-[#3ee08f]" style={{ width: `${(report.greens / Math.max(1, report.total)) * 100}%` }} />
+            </div>
+          )}
+        </div>
+      )}
+      <p className="text-xs text-muted">Depois do ensaio: <b>🔁 Recomeçar o jogo</b> na Torre e <b>Apagar robôs</b> aqui.</p>
     </div>
   );
 }
