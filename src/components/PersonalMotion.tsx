@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 import type { PersonalFinale } from "@/lib/finale";
 import MotionPlayer, { fadeUp, type Slide } from "./MotionPlayer";
+import QuoteCloud from "./QuoteCloud";
 
 const Big = ({ n, label, d = 0 }: { n: number | string; label: string; d?: number }) => (
   <motion.div {...fadeUp(d)}><div className="text-6xl font-black text-accent">{n}</div><div className="text-lg">{label}</div></motion.div>
@@ -27,11 +28,14 @@ export default function PersonalMotion({ data }: { data: PersonalFinale }) {
       <motion.p {...fadeUp()} className="text-sm uppercase tracking-widest text-accent">Se o time pudesse resumir você</motion.p>
       <motion.p {...fadeUp(0.5)} className="text-3xl font-bold leading-snug">{data.aiLine}</motion.p>
     </> });
-    data.quotes.slice(0, 8).forEach((q, i) => s.push({ key: `q${i}`, duration: Math.min(9000, 3500 + q.text.length * 40), content: <>
-      <motion.p {...fadeUp(0.2)} className="text-3xl font-semibold leading-snug">“{q.text}”</motion.p>
-      <motion.p {...fadeUp(0.9)} className="text-lg text-accent">— {q.from}</motion.p>
-    </> }));
-    if (data.quotes.length > 8) s.push({ key: "more", duration: 4000, content: <motion.p {...fadeUp()} className="text-2xl">…e mais <b className="text-accent">{data.quotes.length - 8}</b> recados esperando por você em “Recebidos” 💌</motion.p> });
+    // nuvem de frases: tudo junto, rápido. Até 14 por tela; mais telas se tiver muito carinho.
+    const quotes = data.quotes.map((q) => ({ text: q.text.length > 110 ? `${q.text.slice(0, 107)}…` : q.text, from: q.from }));
+    for (let k = 0; k < Math.min(quotes.length, 42); k += 14) {
+      const chunk = quotes.slice(k, k + 14);
+      s.push({ key: `cloud${k}`, full: true, duration: 4000 + chunk.length * 450,
+        content: <QuoteCloud items={chunk} title={k === 0 ? "O que o time escreveu pra você" : "…e tem mais 💛"} /> });
+    }
+    if (quotes.length > 42) s.push({ key: "more", duration: 3500, content: <motion.p {...fadeUp()} className="text-2xl">…e mais <b className="text-accent">{quotes.length - 42}</b> recados esperando por você em “Recebidos” 💌</motion.p> });
     if (data.stickers.length) s.push({ key: "st", duration: 5000, content: <>
       <motion.p {...fadeUp()} className="text-muted">Os títulos que te deram</motion.p>
       {data.stickers.slice(0, 4).map((st, i) => (
