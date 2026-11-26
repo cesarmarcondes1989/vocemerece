@@ -23,6 +23,13 @@ export default async function Eu() {
   return (
     <main className="mx-auto max-w-md px-4 pb-32 pt-[max(env(safe-area-inset-top),20px)]">
       <p className="mb-2 text-center text-xs uppercase tracking-widest text-muted">Seu planeta · {lvl.name}</p>
+      <div className="mb-4 rounded-2xl bg-white/5 p-3 text-center text-sm">
+        <div className="mb-1 h-2 overflow-hidden rounded-full bg-white/10">
+          <div className="h-full rounded-full" style={{ width: `${Math.min(100, ((planet?.energy ?? 0) / game.green_at) * 100)}%`, background: color }} />
+        </div>
+        💚 <b>{Math.min(planet?.energy ?? 0, game.green_at)}/{game.green_at}</b> de energia recebida
+        <span className="text-muted"> · fica verde quando o time te visita · ⭐ {planet?.xp ?? 0} XP é o que você dá</span>
+      </div>
       <ProfileView data={profile} mode={{ kind: "self" }} color={color} />
       <div className="fixed inset-x-0 bottom-0 z-20 bg-gradient-to-t from-space via-space/90 to-transparent p-4 pb-[max(env(safe-area-inset-bottom),16px)]">
         <Link href={game.phase === "finale" ? "/final" : "/universo"}

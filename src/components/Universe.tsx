@@ -88,7 +88,15 @@ export default function Universe({ me, initialPlanets, initialComets, initialGam
         <div className="flex items-center justify-between gap-2">
           <Link href="/eu" className="flex items-center gap-2">
             <span className="grid h-10 w-10 place-items-center rounded-full text-lg font-black text-black" style={{ background: energyColor(mine?.energy ?? 0, game.green_at) }}>{lvl.n}</span>
-            <span className="leading-tight"><b>{lvl.name}</b><br /><span className="text-xs text-accent">{mine?.xp ?? 0} XP</span></span>
+            <span className="leading-tight">
+              <b>{lvl.name}</b><br />
+              <span className="text-xs"><span className="text-accent" title="XP: o carinho que você DÁ">⭐ {mine?.xp ?? 0} XP dados</span>
+                {" · "}
+                <span title="Energia: o carinho que você RECEBE. Chegou no máximo, seu planeta fica verde." style={{ color: energyColor(mine?.energy ?? 0, game.green_at) }}>
+                  💚 {Math.min(mine?.energy ?? 0, game.green_at)}/{game.green_at} recebidos
+                </span>
+              </span>
+            </span>
           </Link>
           <div className="flex gap-2">
             {me.isModerator && <Link href="/admin" className="rounded-full border border-white/20 px-3 py-2 text-sm">🛡️</Link>}
