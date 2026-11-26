@@ -14,7 +14,7 @@ export default async function Preview({ params }: PageProps<"/admin/preview/[slu
   return (
     <main className="mx-auto max-w-md px-4 py-6">
       <Link href="/admin" className="mb-3 inline-block text-sm underline">← Torre de controle</Link>
-      <ProfileView data={profile} mode={{ kind: "visit", canInteract: false, onXp: () => {} }} />
+      <ProfileView data={profile} mode={{ kind: "visit", canInteract: false }} />
     </main>
   );
 }

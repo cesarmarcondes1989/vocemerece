@@ -5,7 +5,7 @@ import { useState } from "react";
 import type { CommentView, ProfileData } from "@/lib/profile";
 import { REACTIONS } from "@/lib/types";
 
-type Mode = { kind: "self" } | { kind: "visit"; canInteract: boolean; onXp: (xp: number, msg?: string) => void };
+type Mode = { kind: "self" } | { kind: "visit"; canInteract: boolean; onXp?: (xp: number, msg?: string) => void };
 
 const card = "rounded-3xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur";
 
@@ -116,8 +116,8 @@ function Reactable({ data, itemRef, mode, compact }: { data: ProfileData; itemRe
       const r = await fetch("/api/messages", { method: "POST", headers: { "content-type": "application/json" },
         body: JSON.stringify({ to: data.id, kind: "reaction", sticker: e, itemRef }) });
       const j = await r.json();
-      if (r.ok) visit.onXp(j.xp);
-      else visit.onXp(0, j.error);
+      if (r.ok) visit.onXp?.(j.xp);
+      else visit.onXp?.(0, j.error);
     }
   }
 
@@ -129,7 +129,7 @@ function Reactable({ data, itemRef, mode, compact }: { data: ProfileData; itemRe
     const j = await r.json();
     setBusy(false);
     if (!r.ok) return setNote(j.error);
-    if (j.status === "approved") { setComments((c) => [...c, { id: j.id, itemRef, from: "você", body: text }]); setText(""); visit.onXp(j.xp); }
+    if (j.status === "approved") { setComments((c) => [...c, { id: j.id, itemRef, from: "você", body: text }]); setText(""); visit.onXp?.(j.xp); }
     else if (j.status === "review") { setText(""); setNote("🛰️ Na alfândega galáctica: um gestor libera rapidinho."); }
     else setNote(`🫣 ${j.reason}${j.suggestion ? ` Que tal: “${j.suggestion}”` : ""}`);
   }
